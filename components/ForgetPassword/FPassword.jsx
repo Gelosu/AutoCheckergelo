@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function ForgotPassword() {
     return (
-      <main className="container vh-100 d-flex justify-content-center align-items-center">
-        <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark h-50 rounded-3">
+      <main className="container d-flex justify-content-center align-items-center">
+        <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark rounded-3 py-5">
           <p className="mb-0 fw-bold fs-5 ">FORGOT PASSWORD</p>
           <p className="fw-light text-center px-3">Enter your GSFE account to reset your password</p>
           <input
