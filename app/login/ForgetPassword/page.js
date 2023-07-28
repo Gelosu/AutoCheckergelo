@@ -4,7 +4,7 @@ import ForgotPassword from "@/components/ForgetPassword/FPassword";
 
 export default function ForgetPasswordPage() {
   return (
-    <main className="d-flex justify-content-between flex-column vh-100">
+    <main >
       <div>
         <NavBar />
       </div>

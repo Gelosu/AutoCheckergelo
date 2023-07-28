@@ -17,7 +17,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="d-flex flex-column justify-content-between vh-100">
+    <main>
       <div>
         <NavBar />
       </div>

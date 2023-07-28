@@ -5,7 +5,7 @@ import Login from "@/components/LoginPage/Login";
 
 export default function LoginPage() {
   return (
-    <main className="vh-100 d-flex flex-column justify-content-between">
+    <main>
       <div>
         <NavBar />
       </div>

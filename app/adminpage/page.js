@@ -4,16 +4,15 @@ import ADMINPAGE from "@/components/Admin/adminpage";
 import Link from "next/link";
 export default function adminpage() {
   return (
-    <main className="vh-100 d-flex justify-content-between flex-column">
+    <main className="d-flex flex-column vh-100">
       <main className="z-index-3">
-        <nav className="navbar w-100 navbar-lg px-3 bg-danger text-dark">
+        <nav className="navbar w-100 navbar-lg position-relative px-3 bg-danger text-dark">
           <Link href="/">
             <img
               src="/TUPC.svg"
               alt="TUPC"
               width={80}
               height={80}
-              priority={true}
             />
           </Link>
           <a href="/login" className="text-decoration-none link-dark">Logout</a>
@@ -22,7 +21,7 @@ export default function adminpage() {
       <div>
         <ADMINPAGE />
       </div>
-      <div>
+      <div className="z-index">
         <Footer />
       </div>
     </main>

@@ -8,7 +8,7 @@ export default function Video(){
                         <source src="" type="video"/>
                     </video>
                 </div>
-                <p>YOU CAN DOWNLOAD THE MANUAL <a className="link-primary text-decoration-none">HERE </a>FOR MORE DETAILS</p>
+                <p className="text-center">YOU CAN DOWNLOAD THE MANUAL <a className="link-primary text-decoration-none">HERE </a>FOR MORE DETAILS</p>
                 
             </section>
         </main>

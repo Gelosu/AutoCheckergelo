@@ -56,7 +56,7 @@ export default function FacultyRegister() {
   };
 
   return (
-    <main className="container-sm py-3 py-sm-5 d-flex justify-content-center align-items-center flex-column">
+    <main className="container-sm custom-h py-3 py-sm-5 d-flex justify-content-center align-items-center flex-column">
       <p className="mb-0 fw-bold fs-5 ">FACULTY REGISTRATION</p>
       <section className="container-sm col-lg-6 py-3 px-4 border border-dark rounded">
         <form onSubmit={handleSubmit(submitForm)}>

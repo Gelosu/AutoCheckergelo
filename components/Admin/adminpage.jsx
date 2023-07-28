@@ -298,7 +298,7 @@ export default function AdminPage() {
   const filteredAdminData = filterData(adminData, searchQuery);
 
   return (
-    <main className="d-flex flex-column container-fluid py-3">
+    <main className="d-flex flex-column container-fluid py-3 pb-5">
       <h1 className="text-center">ADMIN PAGE</h1>
       <label htmlFor="databaseOption">DATABASE:</label>
       <div className="d-flex justify-content-between">
@@ -332,9 +332,9 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-2 border border-dark container-fluid py-3 rounded bg-danger">
+      <div className="mt-2 border border-danger border-5 container-fluid p-1 rounded">
         {selectedOption === "student" && (
-          <div className="container-fluid border border-danger rounded w-100 bg-light">
+          <div className="container-fluid rounded w-100 bg-light">
             {/* Table Header */}
             <div className="row">
               <p className="m-0 col-1 border border-dark text-center rounded-start px-0">
@@ -491,11 +491,11 @@ export default function AdminPage() {
         )}
 
         {selectedOption === "faculty" && (
-          <div className="container-fluid border border-danger rounded w-100  bg-light">
+          <div className="container-fluid rounded w-100  bg-light">
             {/* Table Header */}
 
             <div className="row">
-              <p className="col-1 m-0 border border-dark text-center rounded-start px-0">
+              <p className="col-1 m-0 border border-dark text-center custom-round1 px-0">
                 TUPCID
               </p>
               <p className="col-1 m-0 border border-dark text-center px-0">
@@ -516,7 +516,7 @@ export default function AdminPage() {
               <p className="col-3 m-0 border border-dark text-center">
                 PASSWORD
               </p>
-              <p className="col-1 m-0 border border-dark text-center rounded-end">
+              <p className="col-1 m-0 border border-dark text-center custom-round2">
                 Action
               </p>
             </div>

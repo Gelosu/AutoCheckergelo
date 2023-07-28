@@ -473,11 +473,10 @@ app.post('/login', (req, res) => {
 
 
 app.post('/adminlogin', (req, res) => {
-  const { adminName } = req.body;
-
+  const { adminName, passWord } = req.body;
   // Check if the adminName exists in the admin_accounts table
-  const query = 'SELECT * FROM admin_accounts WHERE ADMINNAME = ?';
-  connection.query(query, [adminName], (err, result) => {
+  const query = 'SELECT * FROM admin_accounts WHERE ADMINNAME = ? and PASSWORD = ?';
+  connection.query(query, [adminName, passWord], (err, result) => {
     if (err) {
       console.error('Error fetching admin account:', err);
       return res.status(500).send({ message: 'Database error' });
