@@ -48,7 +48,18 @@ a{
 .custom-c{
   appearance: none;
 }
-
+#ShowHide{
+  position: absolute;
+  right: .7rem; 
+  top: 50%;
+  transform: translateY(-50%);
+}
+#ShowHide2{
+  position: absolute;
+  right: .7rem;
+  top: 8px;
+  
+}
 @media screen and (max-width:767px) {
   .custom-c,.custom-v{
     cursor: pointer;
