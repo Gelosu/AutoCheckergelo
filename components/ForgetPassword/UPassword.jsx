@@ -34,8 +34,6 @@ export default function UpdatePassword() {
 
   // Function to handle form submit
   const submitForm = async (data) => {
-    // Check if the passwords match
-
     try {
       // Make a POST request to the server to update the password
       const response = await axios.put(
@@ -47,6 +45,7 @@ export default function UpdatePassword() {
       // If the request is successful, show a success message and redirect to the login page
       alert(response.data.message);
       // Redirect to the login page after successful password update
+      router.push("/login")
       // Implement the redirect logic here
     } catch (error) {
       // If there is an error, show an error message

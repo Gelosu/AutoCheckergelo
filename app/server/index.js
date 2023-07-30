@@ -710,7 +710,6 @@ const updatePassword = async (table, TUPCID, newPassword) => {
 };
 
 // PASSWORD UPDATE
-// PASSWORD UPDATE
 app.put('/updatepassword/:TUPCID', async (req, res) => {
   const TUPCIDFromParams = req.params.TUPCID; // Get the TUPCID from the request params
   const { newPassword } = req.body;
