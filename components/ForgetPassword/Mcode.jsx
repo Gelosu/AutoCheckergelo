@@ -8,45 +8,43 @@ export default function MatchCode() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [TUPCID, setTUPCID] = useState("");
   const router = useRouter();
-
+  
   useEffect(() => {
-    const TUPCIDFromQuery = router.query?.TUPCID;
-    if (TUPCIDFromQuery) {
-      setTUPCID(TUPCIDFromQuery);
-    }
+    console.log(JSON.stringify(router.query));
   }, [router.query]);
-
+  console.log(JSON.stringify(router.query));
   const handleFormSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setIsSubmitting(true);
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+  
+    try {
+      // Make the GET request to fetch the TUPCID and accountType based on the code
+      const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
+  
+      // Check if both TUPCID and accountType are present in the response data
+      if (data.TUPCID && data.accountType) {
+        // Success, TUPCID found, save TUPCID and accountType, then redirect to reset password page
 
-  try {
-    // Make the GET request to fetch the TUPCID based on the code
-    const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
+        const { accountType } = data; // Extract the accountType from the response data
+        console.log('code match:', data.TUPCID, accountType);
+      // Inside the handleFormSubmit function in MatchCode component
+      //router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}&accountType=${data.accountType}`);
+      } else {
+        // Code does not match, show error message
+        setError("Invalid code");
 
-    if (data.TUPCID) {
-      // Success, TUPCID found, save TUPCID and redirect to reset password page
-      setTUPCID(data.TUPCID);
-      console.log('code match:', data.TUPCID); // <-- Add this line to log the TUPCID value
-      // Include the accountType in the URL query parameter when redirecting
-      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}`);
-    } else {
-      // Code does not match, show error message
-      setError("Invalid code");
-      setTUPCID("");
+      }
+    } catch (error) {
+      // Error making the GET request
+      console.error("Error occurred while making the GET request:", error);
+      setError("Failed to communicate with the server");
+
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    // Error making the GET request
-    console.error("Error occurred while making the GET request:", error);
-    setError("Failed to communicate with the server");
-    setTUPCID("");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
@@ -70,7 +68,7 @@ export default function MatchCode() {
               className="px-3 mb-3 btn btn-outline-dark col-5"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? <span>Loading...</span> : "Submit"}
             </button>
           </div>
         </form>
