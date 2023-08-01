@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Import the useRouter hook from 'next/router'
+import { useRouter, useSearchParams } from "next/navigation"; // Import the useRouter hook from 'next/router'
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -13,13 +13,11 @@ export default function UpdatePassword() {
   const [PASSWORD, setPASSWORD] = useState("");
   const [accountType, setAccountType] = useState(""); // Add a new state for accountType
   const [show, setShow] = useState(false);
+  const searchParams = useSearchParams();
   // Fetch the TUPCID and accountType from the URL when the component mounts
   useEffect(() => {
-    console.log("useEffect triggered");
-    const TUPCIDFromQuery = router.query?.TUPCID;
-    const accountTypeFromQuery = router.query?.accountType;
-    console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
-    console.log("accountTypeFromQuery:", accountTypeFromQuery);
+    const TUPCIDFromQuery = searchParams.get("TUPCID")
+    const accountTypeFromQuery = searchParams.get("accountType")
     if (TUPCIDFromQuery) {
       setTUPCID(TUPCIDFromQuery);
     }
@@ -27,7 +25,7 @@ export default function UpdatePassword() {
       setAccountType(accountTypeFromQuery);
     }
   }, [router.query]);
-  
+  console.log(TUPCID, accountType)
 
   const schema = yup.object().shape({
     NewPassword: yup.string().required("Enter a password"),
@@ -46,12 +44,12 @@ export default function UpdatePassword() {
     
     try {
       // // Make a POST request to the server to update the password
-      // const response = await axios.put(
-      //   `http://localhost:3001/updatepassword/${TUPCID}`,
-      //   {
-      //     PASSWORD: PASSWORD,
-      //   }
-      // );
+       const response = await axios.put(
+      `http://localhost:3001/updatepassword/${TUPCID}`,
+         {
+           PASSWORD: PASSWORD,
+        }
+     );
       // If the request is successful, show a success message and redirect to the login page
       console.log("TUPCID:", TUPCID);
       console.log("accountType:", accountType);

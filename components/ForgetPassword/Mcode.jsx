@@ -1,7 +1,7 @@
-"use client"
 
+"use client"
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 
 export default function MatchCode() {
@@ -9,11 +9,11 @@ export default function MatchCode() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  
-  useEffect(() => {
-    console.log(JSON.stringify(router.query));
-  }, [router.query]);
-  console.log(JSON.stringify(router.query));
+  const searchParams = useSearchParams();
+  const TUPCID = searchParams.get("TUPCID");
+  const accountType = searchParams.get('accountType');
+  console.log("TUPCID:",TUPCID);
+  console.log("accountType:",accountType);
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -30,7 +30,7 @@ export default function MatchCode() {
         const { accountType } = data; // Extract the accountType from the response data
         console.log('code match:', data.TUPCID, accountType);
       // Inside the handleFormSubmit function in MatchCode component
-      //router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}&accountType=${data.accountType}`);
+      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else {
         // Code does not match, show error message
         setError("Invalid code");
@@ -53,7 +53,7 @@ export default function MatchCode() {
         <p className="fw-light text-center px-3">
           Please enter the 6-digit code sent to your GSFE Account
         </p>
-        <form onSubmit={handleFormSubmit} className="text-center d-flex flex-column">
+        <form onClick={handleFormSubmit} className="text-center d-flex flex-column">
           <input
             type="text"
             className="py-1 px-3 rounded border border-dark mb-3 text-center"
