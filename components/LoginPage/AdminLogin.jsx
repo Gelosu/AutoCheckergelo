@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-
 const AdminLogin = () => {
   const [error, setError] = useState('');
   const router = useRouter();
-
   const handleAdminLogin = async (event) => {
     event.preventDefault();
     const adminName = event.target.elements.ADMINNAME.value;
+
     const passWord = event.target.elements.PASSWORD.value;
     // Log the adminName for development purposes only
     console.log('Admin Name:', adminName);
-
     try {
       const response = await axios.post('http://localhost:3001/adminlogin', {
         adminName,
         passWord,
       });
-
       const isAuthenticated = response.data.isAuthenticated;
       if (isAuthenticated) {
         console.log('Login successful');
@@ -33,7 +30,6 @@ const AdminLogin = () => {
       console.error('Error during login:', error);
     }
   };
-
   // useEffect to handle errors and redirect to login page
   useEffect(() => {
     if (error) {
@@ -43,7 +39,6 @@ const AdminLogin = () => {
       }, 3000); // Redirect after 3 seconds
     }
   }, [error, router]);
-
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
       <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark h-50 rounded-3">
@@ -60,5 +55,4 @@ const AdminLogin = () => {
     </main>
   );
 };
-
 export default AdminLogin;

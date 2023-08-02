@@ -10,14 +10,13 @@ import { yupResolver } from "@hookform/resolvers/yup";
 export default function UpdatePassword() {
   const router = useRouter();
   const [TUPCID, setTUPCID] = useState("");
-  const [PASSWORD, setPASSWORD] = useState("");
-  const [accountType, setAccountType] = useState(""); // Add a new state for accountType
+  const [accountType, setAccountType] = useState("");
   const [show, setShow] = useState(false);
   const searchParams = useSearchParams();
-  // Fetch the TUPCID and accountType from the URL when the component mounts
+
   useEffect(() => {
-    const TUPCIDFromQuery = searchParams.get("TUPCID")
-    const accountTypeFromQuery = searchParams.get("accountType")
+    const TUPCIDFromQuery = searchParams.get("TUPCID");
+    const accountTypeFromQuery = searchParams.get("accountType");
     if (TUPCIDFromQuery) {
       setTUPCID(TUPCIDFromQuery);
     }
@@ -25,38 +24,34 @@ export default function UpdatePassword() {
       setAccountType(accountTypeFromQuery);
     }
   }, [router.query]);
-  console.log(TUPCID, accountType)
+  console.log(TUPCID, accountType);
 
   const schema = yup.object().shape({
     NewPassword: yup.string().required("Enter a password"),
     ConfirmPassword: yup
       .string()
-      .oneOf([yup.ref("NewPassword"), null], "Didn't Match"),
+      .oneOf([yup.ref("NewPassword"), null], "Passwords must match"),
   });
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({ resolver: yupResolver(schema) });
 
-  // Function to handle form submit
-  const submitForm = async (data) => {
-    
+  const { handleSubmit, register, formState: { errors } } = useForm({ resolver: yupResolver(schema) });
+
+  const submitForm = async (formData) => {
     try {
-      // // Make a POST request to the server to update the password
-       const response = await axios.put(
-      `http://localhost:3001/updatepassword/${TUPCID}`,
-         {
-           PASSWORD: PASSWORD,
+      const { NewPassword } = formData;
+
+      // Make a PUT request to the server to update the password
+      const response = await axios.put(
+        `http://localhost:3001/updatepassword/${TUPCID}`,
+        {
+          PASSWORD: NewPassword,
         }
-     );
+      );
+
       // If the request is successful, show a success message and redirect to the login page
-      console.log("TUPCID:", TUPCID);
-      console.log("accountType:", accountType);
+      console.log("Password sent to the database:", NewPassword);
+      console.log("Response from server:", response.data.message);
       alert(response.data.message);
-      // Redirect to the login page after successful password update
       router.push("/login");
-      // Implement the redirect logic here
     } catch (error) {
       // If there is an error, show an error message
       console.error("Error updating password:", error);
@@ -66,7 +61,7 @@ export default function UpdatePassword() {
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
-      <section className="col-lg-5 col-sm-8 col-10  d-flex justify-content-center align-items-center flex-column border border-dark rounded-3 py-5">
+      <section className="col-lg-5 col-sm-8 col-10 d-flex justify-content-center align-items-center flex-column border border-dark rounded-3 py-5">
         <p className="mb-0 fw-bold fs-5">FORGOT PASSWORD</p>
         <form
           onSubmit={handleSubmit(submitForm)}
@@ -77,7 +72,6 @@ export default function UpdatePassword() {
               type={show ? "text" : "password"}
               className="py-1 px-5 rounded border border-dark mb-1 text-center col-12"
               placeholder="NEW PASSWORD"
-              onChange={(e) => setPASSWORD(e.target.value)}
               {...register("NewPassword")}
             />
             <a onClick={() => setShow(!show)}>
