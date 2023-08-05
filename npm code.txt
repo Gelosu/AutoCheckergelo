@@ -1,1 +1,0 @@
-npm install express body-parser cors passport express-session cookie-parser bcrypt mysql mysql2 passport-local
