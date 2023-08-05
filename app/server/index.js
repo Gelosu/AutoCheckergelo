@@ -783,7 +783,26 @@ app.get('/getAccountType/:TUPCID', async (req, res) => {
   }
 });
 
+//student info
+app.get('/studinfo/:TUPCID', async (req, res) => {
+  const { TUPCID } = req.params;
 
+  try {
+    const query ='SELECT FIRSTNAME, SURNAME, COURSE, YEAR FROM student_accounts WHERE TUPCID = ?';
+    const [all] = await connection.query(query, [TUPCID]);
+
+    if (all.length > 0) {  
+      const { FIRSTNAME, SURNAME, COURSE, YEAR } = all[0];
+      console.log(FIRSTNAME, SURNAME, COURSE, YEAR)
+      return res.status(202).send({FIRSTNAME, SURNAME, COURSE, YEAR});
+    } else {
+      return res.status(404).send({ message: 'Code not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching TUPCID:', error);
+    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+  }
+});
 
 //for server
 app.listen(3001, () => {

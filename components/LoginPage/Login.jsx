@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 export default function Login() {
+  
   const [error, setError] = useState('');
   const router = useRouter();
   const tupcRegExp = /TUPC-\d{2}-\d{4}$/;
@@ -27,24 +28,23 @@ export default function Login() {
   } = useForm({ resolver: yupResolver(schema) });
 
   const submitForm = async (data) => {
-    console.log(data);
     const { TUPCID, PASSWORD } = data;
-    
-  
+
     try {
-      const response = await axios.post('http://localhost:3001/login',
-      {TUPCID, PASSWORD });
+      const response = await axios.post('http://localhost:3001/login', {
+        TUPCID,
+        PASSWORD,
+      });
       console.log('Response from server:', response.data);
       const accountType = response.data.accountType;
       console.log('Received account type:', accountType);
-  
+
       if (accountType === 'student') {
         console.log('Redirect to student page');
-        router.push('/Classroom/S');
+        router.push(`/Classroom/S?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else if (accountType === 'faculty') {
         console.log('Redirect to faculty page');
-        router.push('/Classroom/F');
-      
+        router.push(`/Classroom/F?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else {
         setError('Account does not exist');
       }
