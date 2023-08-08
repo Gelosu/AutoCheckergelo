@@ -804,6 +804,83 @@ app.get('/studinfo/:TUPCID', async (req, res) => {
   }
 });
 
+
+
+//faculty info
+
+app.get('/facultyinfo/:TUPCID', async (req, res) => {
+  const { TUPCID } = req.params;
+
+  try {
+    const query ='SELECT FIRSTNAME, SURNAME, SUBJECTDEPT FROM faculty_accounts WHERE TUPCID = ?';
+    const [all] = await connection.query(query, [TUPCID]);
+
+    if (all.length > 0) {  
+      const { FIRSTNAME, SURNAME, SUBJECTDEPT } = all[0];
+      console.log(FIRSTNAME, SURNAME, SUBJECTDEPT)
+      return res.status(202).send({FIRSTNAME, SURNAME, SUBJECTDEPT});
+    } else {
+      return res.status(404).send({ message: 'Code not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching TUPCID:', error);
+    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+  }
+});
+
+
+//faculty add and delete class
+
+// Endpoint to add a new class
+app.post("/addclass", (req, res) => {
+  const { class_code ,class_name, subject_name } = req.body;
+  
+  const query = `INSERT INTO class_table (class_code, class_name, subject_name, created_at) VALUES (?, ?, ?, ?)`;
+  connection.query(query, [class_code, class_name, subject_name, Date()], (error, results) => {
+    if (error) {
+      console.error("Error adding class: ", error);
+      res.status(500).send("Error adding class");
+    } else {
+      console.log("Class added successfully");
+      res.status(201).send("Class added successfully");
+    }
+  });
+});
+
+// Endpoint to delete a class by classCode
+app.delete("/deleteclass/:class_name", (req, res) => {
+  const class_name = req.params.class_name;
+
+  const query = 'DELETE FROM class_table WHERE class_name = ?';
+  connection.query(query, [class_name], (error, results) => {
+    if (error) {
+      console.error("Error deleting class: ", error);
+      res.status(500).send("Error deleting class");
+    } else if (results.affectedRows === 0) {
+      res.status(404).send("Class not found");
+    } else {
+      console.log("Class deleted successfully");
+      res.status(200).send("Class deleted successfully");
+    }
+  });
+});
+
+
+// Endpoint to fetch all classes
+app.get("/classes", (req, res) => {
+  const query = "SELECT * FROM class_table"; // 
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error fetching classes: ", error);
+      res.status(500).send("Error fetching classes");
+    } else {
+      console.log("Classes fetched successfully");
+      res.status(200).json(results);
+    }
+  });
+});
+
+
 //for server
 app.listen(3001, () => {
   console.log('Server started on port 3001');
