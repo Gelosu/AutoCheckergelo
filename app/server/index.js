@@ -833,16 +833,16 @@ app.get('/facultyinfo/:TUPCID', async (req, res) => {
 
 // Endpoint to add a new class
 app.post("/addclass", (req, res) => {
-  const { class_code ,class_name, subject_name } = req.body;
+  const { class_code ,class_name, subject_name} = req.body;
   
   const query = `INSERT INTO class_table (class_code, class_name, subject_name, created_at) VALUES (?, ?, ?, ?)`;
-  connection.query(query, [class_code, class_name, subject_name, Date()], (error, results) => {
+  connection.query(query, [class_code, class_name, subject_name, Date() ], (error, results) => {
     if (error) {
       console.error("Error adding class: ", error);
       res.status(500).send("Error adding class");
     } else {
       console.log("Class added successfully");
-      res.status(201).send("Class added successfully");
+      res  .status(201).send("Class added successfully");
     }
   });
 });
@@ -871,13 +871,60 @@ app.get("/classes", (req, res) => {
   const query = "SELECT * FROM class_table"; // 
   connection.query(query, (error, results) => {
     if (error) {
-      console.error("Error fetching classes: ", error);
       res.status(500).send("Error fetching classes");
     } else {
-      console.log("Classes fetched successfully");
       res.status(200).json(results);
     }
   });
+});
+
+
+
+
+
+
+
+//code validation for aclascode..
+
+// Define API endpoint to check if class code exists
+// app.get("/checkclass/:classCode", (req, res) => {
+//   const classCode = req.params.classCode;
+
+//   // Query the database to check if the class code exists
+//   const query = "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
+//   console.log("classcode finding: " , classCode)
+//   connection.query(query, [classCode], (error, results) => {
+//     if (error) {
+//       console.error("Error checking class code:", error);
+//       res.status(500).json({ error: "An error occurred while checking the class code." });
+//     } else {
+//       const count = results[0].count;
+//       const exists = count > 0;
+//       res.status(200).json({ exists });
+//     }
+//   });
+// });
+
+app.get('/checkclass/:classCode', async (req, res) => {
+  const { classCode } = req.params;
+
+  try {
+    console.log("classcode findings: ", classCode);
+    const query = "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
+    const [rows] = await connection.query(query, [classCode]);
+
+    const count = rows[0].count;
+    console.log(count)
+    if (count == 1) {
+      res.status(200).json({ exists: true });
+      console.log(true);
+    } else {
+      res.status(404).json({ exists: false, message: 'Code not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching classCode:', error);
+    res.status(500).json({ message: 'Failed to fetch classCode' });
+  }
 });
 
 

@@ -14,7 +14,6 @@ export default function FacultyArchive() {
   useEffect(() => {
     fetchAndSetClasses(); // Fetch classes initially
     const interval = setInterval(fetchAndSetClasses, 1000); // Poll every 5 seconds
-  
     return () => clearInterval(interval); // Clean up the interval on unmount
   }, []);
 
@@ -47,15 +46,12 @@ export default function FacultyArchive() {
       const newClass = {
         class_code: inputValue,
         class_name: cName,
-        subject_name: sName
+        subject_name: sName,
       };
       setInputValue("");
       setcName("");
       setsName("");
       console.log("Sending data:", newClass); // Log the data being sent
-     
-
-
       try {
         const response = await axios.post("http://localhost:3001/addclass", newClass);
         if (response.status === 201) {
