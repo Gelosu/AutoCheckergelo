@@ -1,13 +1,17 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
+
 export default function FacultyClassTest() {
   const [test, setTest] = useState([]);
   const [testName, setTestName] = useState("");
   const [renametest, setRenameTest] = useState("");
   const searchparams = useSearchParams();
-  const classnames = searchparams.get("classnames")
+  const classname = searchparams.get("classname")
+   const subjectname = searchparams.get("subjectname")
+    const classcode = searchparams.get("classcode")
   const addTest = () => {
     if (testName.trim() !== "") {
       setTest([...test, testName]);
@@ -37,18 +41,25 @@ export default function FacultyClassTest() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>{classnames}</span>
+          <span>{classname} CLASSCODE: {classcode} SUBJECT: {subjectname}</span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark">
             <h4>TEST</h4>
           </a>
-          <a
-            href="/Classroom/F/Students"
-            className="link-dark text-decoration-none"
-          >
-            <h4>STUDENTS</h4>
-          </a>
+          <Link
+    href={{
+      pathname: "/Classroom/F/Students",
+      query: {
+        classname: classname,
+        classcode: classcode,        
+        subjectname: subjectname,    
+      },
+    }}
+    className="link-dark text-decoration-none"
+  >
+    <h4>STUDENTS</h4>
+  </Link>
         </div>
         <div className="d-flex gap-3">
           <button

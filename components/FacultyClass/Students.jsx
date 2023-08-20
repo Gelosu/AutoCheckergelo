@@ -1,11 +1,17 @@
 "use client";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 export default function FacultyClassStudent() {
   const [studlist, setStudlist] = useState([]);
   const [studname, setStudname] = useState("");
   const [tupcId, setTupcId] = useState("");
   const [status, setStatus] = useState("");
+
+  const searchparams = useSearchParams();
+  const classname = searchparams.get("classname");
+  const classcode = searchparams.get("classcode");
+  const subjectname = searchparams.get("subjectname")
   const addSTUD = () => {
     if (tupcId.trim() !== "") {
       const infor = {
@@ -34,7 +40,7 @@ export default function FacultyClassStudent() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>CLASS NAME</span>
+          <span>{classname} CLASSCODE: {classcode} SUBJECT: {subjectname}</span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark text-decoration-none">
