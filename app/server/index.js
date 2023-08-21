@@ -805,15 +805,15 @@ app.get('/studinfo/:TUPCID', async (req, res) => {
     return res.status(500).send({ message: 'Failed to fetch TUPCID' });
   }
 });
-
+//update personal info student
 app.get('/studinfos/:TUPCID', async(req, res) => {
   const {TUPCID} = req.params;
   try{
     const query = "SELECT * from student_accounts WHERE TUPCID = ?";
     const [getall] = await connection.query(query, [TUPCID])
     if (getall.length > 0){
-      const {FIRSTNAME, SURNAME, MIDDLENAME, COURSE, YEAR, STATUS, GSFEACC, PASSWORD} = getall[0];
-      return res.status(202).send({FIRSTNAME, SURNAME, MIDDLENAME, COURSE, YEAR, STATUS, GSFEACC, PASSWORD})
+      const {FIRSTNAME, SURNAME, MIDDLENAME, COURSE, SECTION, YEAR, STATUS, GSFEACC, PASSWORD} = getall[0];
+      return res.status(202).send({FIRSTNAME, SURNAME, MIDDLENAME, COURSE, SECTION, YEAR, STATUS, GSFEACC, PASSWORD})
     }else{
       return res.status(404).send({ message: 'Student not found' });
     }
@@ -822,7 +822,6 @@ app.get('/studinfos/:TUPCID', async(req, res) => {
   }
 })
 //faculty info
-
 app.get('/facultyinfo/:TUPCID', async (req, res) => {
   const { TUPCID } = req.params;
 
@@ -832,7 +831,6 @@ app.get('/facultyinfo/:TUPCID', async (req, res) => {
 
     if (all.length > 0) {  
       const { FIRSTNAME, SURNAME, SUBJECTDEPT } = all[0];
-      console.log(FIRSTNAME, SURNAME, SUBJECTDEPT)
       return res.status(202).send({FIRSTNAME, SURNAME, SUBJECTDEPT});
     } else {
       return res.status(404).send({ message: 'Code not found' });
@@ -842,7 +840,22 @@ app.get('/facultyinfo/:TUPCID', async (req, res) => {
     return res.status(500).send({ message: 'Failed to fetch TUPCID' });
   }
 });
-
+//update personal info faculty
+app.get('/facultyinfos/:TUPCID', async(req, res) => {
+  const {TUPCID} = req.params;
+  try{
+    const query = "SELECT * from faculty_accounts WHERE TUPCID = ?";
+    const [getall] = await connection.query(query, [TUPCID])
+    if (getall.length > 0){
+      const {FIRSTNAME, SURNAME, MIDDLENAME, SUBJECTDEPT, GSFEACC, PASSWORD} = getall[0];
+      return res.status(202).send({FIRSTNAME, SURNAME, MIDDLENAME, SUBJECTDEPT, GSFEACC, PASSWORD})
+    }else{
+      return res.status(404).send({ message: 'Person not found' });
+    }
+  } catch(error){
+    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+  }
+})
 
 //faculty add and delete class
 

@@ -160,8 +160,8 @@ export default function StudentRegister() {
               <option value="none" selected disabled hidden>
                 Choose...
               </option>
-              <option value="A">1ST</option>
-              <option value="B">2ND</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
 
             </select>
             <small className="text-sm-end text-center text-danger">

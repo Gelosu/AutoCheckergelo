@@ -11,34 +11,46 @@ export default function StudentSetting() {
   const [surName, setSurName] = useState("");
   const [MiddleName, setMiddleName] = useState("");
   const [course, setCourse] = useState("");
+  const [section, setSection] = useState("");
   const [year, setYear] = useState("");
   const [status, setStatus] = useState("");
   const [gsfeacc, setGsfeacc] = useState("");
   const [password, setPassword] = useState("");
 
-
   useEffect(() => {
-    const fetchstudentdate = async () =>{
-      try{
-        const response = await axios.get(`http://localhost:3001/studinfos/${TUPCID}`);
-        const {FIRSTNAME, SURNAME, MIDDLENAME, COURSE, YEAR, STATUS, GSFEACC, PASSWORD} = response.data;
-        setFirstName(FIRSTNAME)
-        setSurName(SURNAME)
-        setMiddleName(MIDDLENAME)
-        setCourse(COURSE)
-        setYear(YEAR)
-        setStatus(STATUS)
-        setGsfeacc(GSFEACC)
-        setPassword(PASSWORD)
-      }
-      catch{
-        
+    const fetchstudentdate = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3001/studinfos/${TUPCID}`
+        );
+        const {
+          FIRSTNAME,
+          SURNAME,
+          MIDDLENAME,
+          COURSE,
+          SECTION,
+          YEAR,
+          STATUS,
+          GSFEACC,
+          PASSWORD,
+        } = response.data;
+        setFirstName(FIRSTNAME);
+        setSurName(SURNAME);
+        setMiddleName(MIDDLENAME);
+        setCourse(COURSE);
+        setSection(SECTION);
+        setYear(YEAR);
+        setStatus(STATUS);
+        setGsfeacc(GSFEACC);
+        setPassword(PASSWORD);
+      } catch(error){
+        console.log(error)
       }
     };
-    fetchstudentdate()
-  }, [TUPCID])
-    
+    fetchstudentdate();
+  }, [TUPCID]);
 
+  const handleSubmit = () => {};
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
@@ -50,8 +62,11 @@ export default function StudentSetting() {
         </div>
         <h3 className="text-center pt-3 m-0 ">UPDATE PERSONAL INFO</h3>
         <div className="d-flex justify-content-center flex-column container col-md-10 col-lg-7 rounded border border-dark bg-lightgray">
-          <p className="text-end">EDIT</p>
-          <form className="row p-3 pt-0 col-sm-10 text-sm-start text-center align-self-center">
+          <p className="text-end pt-2">EDIT</p>
+          <form
+            onSubmit={handleSubmit}
+            className="row p-3 pt-0 col-sm-10 text-sm-start text-center align-self-center"
+          >
             <div className="col-sm-6 p-2">
               <p className="p-0 m-0">TUPC ID</p>
               <input
@@ -70,7 +85,6 @@ export default function StudentSetting() {
               />
             </div>
             <div className="col-sm-6 p-2">
-              
               <p className="p-0 m-0">FIRST NAME</p>
               <input
                 type="text"
@@ -141,6 +155,7 @@ export default function StudentSetting() {
               <p className="p-0 m-0">SECTION</p>
               <select
                 type="text"
+                value={section}
                 className="col-12 rounded py-1 px-3 border border-dark"
               >
                 <option value="none" selected disabled hidden>
@@ -173,7 +188,10 @@ export default function StudentSetting() {
               />
             </div>
             <div className="pt-3 text-center col-12">
-              <button className="btn btn-light col-md-5 col-lg-2 border border-dark rounded text-center">
+              <button
+                type="submit"
+                className="btn btn-light col-md-5 col-lg-2 border border-dark rounded text-center"
+              >
                 SAVE
               </button>
             </div>
