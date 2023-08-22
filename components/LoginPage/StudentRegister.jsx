@@ -33,6 +33,7 @@ export default function StudentRegister() {
     try {
       setErrorMessage("");
       const response = await axios.post("http://localhost:3001/studreg", data);
+      console.log(response.status)
       console.log(response.data);
       if (response.status === 200) {
         // Student registration successful, redirect or show success message
@@ -125,9 +126,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center "
               {...register("COURSE")}
-              id="inputGroupSelect2"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="BSCE">BSCE</option>
@@ -155,9 +155,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("SECTION")}
-              id="inputGroupSelect3"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="A">A</option>
@@ -173,9 +172,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("YEAR")}
-              id="inputGroupSelect3"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="1ST">1ST</option>
@@ -192,9 +190,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("STATUS")}
-              id="inputGroupSelect1"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="REGULAR">REGULAR</option>

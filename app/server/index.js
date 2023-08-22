@@ -103,6 +103,7 @@ app.post('/studreg', (req, res) => {
                 console.error('Error executing the INSERT query:', err);
                 return res.status(500).send({ message: 'Database error' });
               }
+              console.log("yes")
               return res.status(200).send({ message: 'Student registered successfully' });
             }
           );
@@ -496,17 +497,28 @@ app.post('/adminlogin', async (req, res) => {
 
   try {
     const connect = await connection.getConnection();
-    const adminLogin = await connect.execute('SELECT * FROM admin_accounts WHERE ADMINNAME = ? AND PASSWORD = ?', [adminName, passWord]);
+    const [adminLogin] = await connect.execute('SELECT * FROM admin_accounts WHERE ADMINNAME = ?', [adminName]);
     connect.release();
+
     if (adminLogin.length === 0) {
       return res.status(404).send({ isAuthenticated: false });
     }
-    return res.status(200).send({ isAuthenticated: true, adminName: adminLogin[0].ADMINNAME });
+
+    const storedHashedPassword = adminLogin[0].PASSWORD; // Fetch hashed password from database
+
+    const passwordMatch = await bcryptjs.compare(passWord, storedHashedPassword);
+
+    if (passwordMatch) {
+      return res.status(200).send({ isAuthenticated: true, adminName: adminLogin[0].ADMINNAME });
+    } else {
+      return res.status(401).send({ isAuthenticated: false });
+    }
   } catch (err) {
     console.error('Error fetching admin account:', err);
     return res.status(500).send({ message: 'Database error' });
   }
 });
+
 
 
 
@@ -553,14 +565,18 @@ app.post('/forgotpassword', async (req, res) => {
     try {
       const studentQuery = 'SELECT TUPCID FROM student_accounts WHERE TUPCID = ?';
       const facultyQuery = 'SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?';
+      const adminQuery = 'SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?';
 
       const [studentRows] = await connection.query(studentQuery, [TUPCID]);
       const [facultyRows] = await connection.query(facultyQuery, [TUPCID]);
+      const [adminRows] = await connection.query(adminQuery, [TUPCID]);
 
       if (studentRows.length > 0) {
         return 'student';
       } else if (facultyRows.length > 0) {
         return 'faculty';
+      } else if (adminRows.length > 0) {
+        return 'admin';
       } else {
         return null; // Account type not found
       }
@@ -736,6 +752,8 @@ app.put('/updatepassword/:TUPCID', async (req, res) => {
       await updatePassword('student', TUPCIDFromParams, PASSWORD);
     } else if (accountType === 'faculty') {
       await updatePassword('faculty', TUPCIDFromParams, PASSWORD);
+    } else if (accountType === 'admin') {
+      await updatePassword('admin', TUPCIDFromParams, PASSWORD);
     } else {
       return res.status(404).send({ message: 'TUPCID not found' });
     }
@@ -764,6 +782,12 @@ const findAccountType = async (TUPCID) => {
       return "faculty";
     }
 
+    // Query the faculty_accounts table
+    const [adminRows] = await connection.query("SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?", [TUPCID]);
+
+    if (adminRows.length > 0) {
+      return "admin";
+    }
     // If no match is found in both tables, return null
     return null;
   } catch (error) {
@@ -1014,6 +1038,32 @@ app.delete('/deletestudentenrollment/:TUPCID/:subjectName', async (req, res) => 
   }
 });
 
+
+
+//VIEWING STUDENTS ENROLLED IN SUBJECT
+app.get("/getstudents/:classcode", async (req, res) => {
+  const classcode = req.params.classcode;
+
+  try {
+    const connect = await connection.getConnection();
+    
+    const query = `
+      SELECT e.TUPCID, s.FIRSTNAME, s.MIDDLENAME, s.SURNAME, s.STATUS,
+             e.subject_name, e.enrollment_date
+      FROM enrollments e
+      INNER JOIN student_accounts s ON e.TUPCID = s.TUPCID
+      WHERE e.class_code = ?;
+    `;
+    
+    const students = await connect.execute(query, [classcode]);
+    connect.release();
+    
+    return res.status(200).json({ students });
+  } catch (err) {
+    console.error('Error fetching students:', err);
+    return res.status(500).json({ message: 'Database error' });
+  }
+});
 
 //for server
 app.listen(3001, () => {
