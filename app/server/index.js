@@ -103,7 +103,7 @@ app.post('/studreg', (req, res) => {
                 console.error('Error executing the INSERT query:', err);
                 return res.status(500).send({ message: 'Database error' });
               }
-              console.log("yes")
+              console.log("yes");
               return res.status(200).send({ message: 'Student registered successfully' });
             }
           );
@@ -164,6 +164,7 @@ app.post('/facultyreg', (req, res) => {
       return res.status(500).send({ message: 'Database error' });
     });
 });
+
 
 // DELETE STUDENT DATA
 app.delete('/students/:TUPCID', (req, res) => {
@@ -881,6 +882,25 @@ app.get('/facultyinfos/:TUPCID', async(req, res) => {
   }
 })
 
+app.put("/updatefacultyinfos/:TUPCID", async(req, res) => {
+  const {TUPCID} = req.params;
+  const updatedData = req.body;
+  try{
+    const datas = Object.keys(updatedData).map((key) => `${key} = ?`).join(",")
+    const query = `UPDATE faculty_accounts SET ${datas} WHERE TUPCID = ?`
+    connection.query(query, [...Object.values(updatedData), TUPCID],
+    (err, result) => {
+      if (err) {
+        console.error('Error updating student data:', err);
+        return res.status(500).send({ message: 'Database error' });
+      }
+      return res.status(200).send({ message: 'Student updated successfully' });
+    }
+    )
+  }catch(error){
+    console.log(error)
+  }
+})
 //faculty add and delete class
 
 // Endpoint to add a new class
