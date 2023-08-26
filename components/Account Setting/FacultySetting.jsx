@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useTupcid } from "@/app/provider";
 
 export default function FacultySetting() {
-  var {tupcids} = useTupcid();
+  const { tupcids } = useTupcid();
   const searchParams = useSearchParams();
   const TUPCID = searchParams.get("TUPCID");
   const [firstName, setFirstName] = useState("");
@@ -13,20 +13,11 @@ export default function FacultySetting() {
   const [surName, setSurName] = useState("");
   const [gsfeacc, setGsfeacc] = useState("");
   const [subjectdept, setSubjectdept] = useState("");
-  const [password, setPassword] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [initialFacultyInfo, setInitialInfo] = useState({
-    firstName: "",
-    middleName: "",
-    surName: "",
-    gsfeacc: "",
-    subjectdept: "",
-    password: "",
-  });
+  const [initialFacultyInfo, setInitialInfo] = useState({});
 
   useEffect(() => {
     const fetchFacultyInfo = async () => {
- 
       try {
         const response = await axios.get(
           `http://localhost:3001/facultyinfos/${TUPCID || tupcids}`
@@ -37,16 +28,15 @@ export default function FacultySetting() {
           SURNAME,
           GSFEACC,
           SUBJECTDEPT,
-          PASSWORD,
         } = response.data;
 
         // Store initial faculty information
         const initialFacultyInfo = {
-          firstName: FIRSTNAME,
-          middleName: MIDDLENAME,
-          surName: SURNAME,
-          gsfeacc: GSFEACC,
-          subjectdept: SUBJECTDEPT,
+          FIRSTNAME,
+          MIDDLENAME,
+          SURNAME,
+          GSFEACC,
+          SUBJECTDEPT,
         };
 
         // Set state with fetched data
@@ -55,19 +45,17 @@ export default function FacultySetting() {
         setSurName(SURNAME);
         setGsfeacc(GSFEACC);
         setSubjectdept(SUBJECTDEPT);
-        setPassword(PASSWORD);
 
         // Set initial faculty information
         setInitialInfo(initialFacultyInfo);
       } catch (error) {
         console.log(error);
-        console.log(TUPCID)
       }
     };
 
     // Call the function to fetch data
     fetchFacultyInfo();
-  }, [TUPCID]);
+  }, [TUPCID, tupcids]);
 
   const handleSave = async () => {
     try {
@@ -78,16 +66,21 @@ export default function FacultySetting() {
         GSFEACC: gsfeacc,
         SUBJECTDEPT: subjectdept,
       };
-      // If a new password is provided, hash it
+     
       await updateFacultyDataOnServer(TUPCID || tupcids, updatedData);
+      window.location.reload();
       // Update initial faculty information
       setInitialInfo(updatedData);
+      // Update shared state or context with the new information
+      updateFacultyInfoContext(updatedData);
       // Exit editing mode
       setIsEditing(false);
+      
     } catch (error) {
       console.log(error);
     }
   };
+  
 
   const updateFacultyDataOnServer = async (TUPCID, updatedData) => {
     try {
@@ -95,11 +88,13 @@ export default function FacultySetting() {
         `http://localhost:3001/updatefacultyinfos/${TUPCID}`,
         updatedData
       );
+      // Update state with new values
       setFirstName(updatedData.FIRSTNAME);
       setMiddleName(updatedData.MIDDLENAME);
       setSurName(updatedData.SURNAME);
       setGsfeacc(updatedData.GSFEACC);
       setSubjectdept(updatedData.SUBJECTDEPT);
+      // Password is not updated here since it might be hashed
     } catch (error) {
       console.error("Error updating faculty data:", error);
     }
@@ -118,7 +113,7 @@ export default function FacultySetting() {
         <div className="d-flex justify-content-center flex-column container col-md-10 col-lg-7 rounded border border-dark bg-lightgray">
           <div className="text-end pt-2">
             <button
-              className="btn btn-secondary col-md-1 col-lg-2 col-xl-1  border border-dark rounded px-1 py-1"
+              className="btn btn-secondary col-md-1 col-lg-1 border border-dark rounded"
               onClick={() => {
                 if (isEditing) {
                   setFirstName(initialFacultyInfo.FIRSTNAME);
@@ -126,16 +121,18 @@ export default function FacultySetting() {
                   setSurName(initialFacultyInfo.SURNAME);
                   setGsfeacc(initialFacultyInfo.GSFEACC);
                   setSubjectdept(initialFacultyInfo.SUBJECTDEPT);
-                  setPassword(initialFacultyInfo.PASSWORD);
                 }
                 setIsEditing((prevEditing) => !prevEditing);
               }}
             >
-              <small>{isEditing ? "X" : "EDIT"}</small>
+              {isEditing ? "X" : "EDIT"}
             </button>
           </div>
 
-          <form className="p-3 pt-0 col-sm-10 text-sm-start text-center align-self-center" onSubmit={handleSave}>
+          <form
+            className="p-3 pt-0 col-sm-10 text-sm-start text-center align-self-center"
+            onSubmit={handleSave}
+          >
             <div className="row p-3 pt-1 pb-2">
               <p className="col-sm-6 p-0 m-0 align-self-center">TUPC ID</p>
               <input
@@ -207,14 +204,21 @@ export default function FacultySetting() {
               </select>
             </div>
             <div className="row p-3 pt-1 pb-2">
-              <p className="col-12 p-0 m-0 align-self-center">PASSWORD: <Link href="/login/ForgetPassword" className="link-dark text-decoration-none">Update Password</Link></p>
-              
+              <p className="col-sm-6 p-0 m-0 align-self-center">
+                PASSWORD: 
+                <Link href="/login/ForgetPassword">Update Password</Link>
+              </p>
             </div>
             {isEditing && (
               <div className="pt-3 text-center col-12">
                 <button
-                type="submit"
+                  type="button"
                   className="btn btn-light col-md-5 col-lg-2 border border-dark rounded text-center"
+                  onClick={() => {
+                    handleSave();
+                    // Optionally, you can reset the form to a non-editing state here
+                    setIsEditing(false);
+                  }}
                 >
                   SAVE
                 </button>

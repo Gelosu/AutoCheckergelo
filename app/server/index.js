@@ -846,6 +846,26 @@ app.get('/studinfos/:TUPCID', async(req, res) => {
     return res.status(500).send({ message: 'Failed to fetch TUPCID' });
   }
 })
+
+app.put("/updatestudentinfos/:TUPCID", async(req, res) => {
+  const {TUPCID} = req.params;
+  const updatedData = req.body;
+  try{
+    const datas = Object.keys(updatedData).map((key) => `${key} = ?`).join(",")
+    const query = `UPDATE student_accounts SET ${datas} WHERE TUPCID = ?`
+    connection.query(query, [...Object.values(updatedData), TUPCID],
+    (err, result) => {
+      if (err) {
+        console.error('Error updating student data:', err);
+        return res.status(500).send({ message: 'Database error' });
+      }
+      return res.status(200).send({ message: 'Student updated successfully' });
+    }
+    )
+  }catch(error){
+    console.log(error)
+  }
+})
 //faculty info
 app.get('/facultyinfo/:TUPCID', async (req, res) => {
   const { TUPCID } = req.params;
@@ -1029,7 +1049,6 @@ app.get("/getclasses/:tupcid", async (req, res) => {
   try {
     const query = "SELECT * FROM enrollments WHERE TUPCID = ?";
     const [rows] = await connection.query(query, [tupcid]);
-
     res.status(200).json(rows);
   } catch (error) {
     console.error("Error fetching classes:", error);
@@ -1085,6 +1104,42 @@ app.get("/getstudents/:classcode", async (req, res) => {
   }
 });
 
+//getting the TUPCID OF PROFESSOR BASED ON CLASSNAME AND SUBJECTNAME
+// Endpoint to get professor's TUPCID based on subject name and class code
+app.get("/getProfTUPCID/:subjectname/:classcode", async (req, res) => {
+  const { subjectname, classcode } = req.params; 
+
+  try {
+    const query = "SELECT TUPCID FROM class_table WHERE subject_name = ? and class_code = ?";
+    const [tupcid] = await connection.query(query, [subjectname, classcode]);
+
+    if (tupcid.length === 1) {
+      const TUPCID = tupcid[0].TUPCID;
+      res.status(200).json({ TUPCID});
+    } else {
+      res.status(404).json({ message: "WHat?" });
+    }
+  } catch (error) {
+    console.error("Error fetching subject name:", error);
+    res.status(500).json({ message: "Failed to fetch subject name" });
+  }
+  });
+
+app.get("/getProfName/:TUPCID",async(req, res) => {
+   const {TUPCID} = req.params;
+  try{
+    const query = "SELECT FIRSTNAME, MIDDLENAME, SURNAME FROM faculty_accounts where TUPCID = ?";
+    const [Name] = await connection.query(query, [TUPCID]);
+    if(Name.length >= 1){
+      const {FIRSTNAME, MIDDLENAME, SURNAME} = Name[0];
+      res.status(200).json({FIRSTNAME, MIDDLENAME, SURNAME})
+    }else{
+      console.log("Error?")
+    }
+  }catch(error){
+    console.log(error)
+  }
+})
 //for server
 app.listen(3001, () => {
   console.log('Server started on port 3001');

@@ -2,6 +2,7 @@ import { useState , useEffect} from "react";
 import Image from "next/image";
 import axios from "axios"
 import { useTupcid } from "@/app/provider";
+import Link from "next/link";
 
 export default function StudentArchive() {
   const [inputValue, setInputValue] = useState("");
@@ -206,11 +207,20 @@ export default function StudentArchive() {
                     </li>
                   </ul>
                 </div>
-                <a href="/Classroom/S/Result" className="text-decoration-none link-dark">
-                  <p key={index} className="text-center">
-                  {classData.subject_name}
-                  </p>
-                </a>
+                <Link
+  key={index}
+  href={{
+    pathname: "/Classroom/S/Result",
+    query: {
+      subjectname: classData.subject_name,
+      classcode: classData.class_code
+    },
+  }}
+  className="link-dark text-decoration-none"
+>
+  <p className="text-center">{classData.subject_name}</p>
+</Link>
+
               </section>
           ))}
         </div>
