@@ -7,16 +7,17 @@ import { useTupcid } from "@/app/provider";
 
 export default function FacultyArchive() {
   const [classes, setClasses] = useState([]);
-  const [inputValue, setInputValue] = useState("");
+  const [cCode, setClassCode] = useState("");
   const [cName, setcName] = useState("");
   const [sName, setsName] = useState("");
   const { tupcids } = useTupcid();
+  const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
     fetchAndSetClasses();
     const interval = setInterval(fetchAndSetClasses, 1000);
     return () => clearInterval(interval);
-  }, [tupcids]); // Include tupcids in the dependency array
+  }, [tupcids]); 
 
   const fetchAndSetClasses = async () => {
     try {
@@ -37,42 +38,43 @@ export default function FacultyArchive() {
     await fetchAndSetClasses();
   };
 
-  //class adding
   const addClass = async () => {
     if (
-      inputValue.trim() !== "" &&
+      cCode.trim() !== "" &&
       cName.trim() !== "" &&
       sName.trim() !== ""
     ) {
-      console.log("inputValue:", inputValue);
+      console.log("cCode:", cCode);
       console.log("classname:", cName);
       console.log("subjectname:", sName);
       console.log("TUPCID:", tupcids);
       const newClass = {
-        class_code: inputValue,
+        class_code: cCode,
         class_name: cName,
         subject_name: sName,
         TUPCID: tupcids,
       };
-      setInputValue("");
-      setcName("");
-      setsName("");
-      console.log("Sending data:", newClass); // Log the data being sent
       try {
         const response = await axios.post(
           "http://localhost:3001/addclass",
           newClass
         );
-        if (response.status === 201) {
+        console.log(response.status)
+        if (response.status === 200) {
           fetchClasses();
-          setInputValue("");
+          setClassCode("");
           setcName("");
           setsName("");
+          setErrorMessage("")
         } else {
           console.error("Error adding class");
         }
       } catch (error) {
-        console.error("Error adding class:", error);
+        if(error.response.status === 409){
+          setErrorMessage("Class Already Exists");
+        }else{
+          setErrorMessage("Class Added");
+        }
       }
     }
   };
@@ -94,6 +96,8 @@ export default function FacultyArchive() {
     }
   };
 
+
+
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
@@ -104,7 +108,7 @@ export default function FacultyArchive() {
           data-bs-toggle="modal"
           data-bs-target="#popup"
         >
-          <Image className="pb-1" src="/add.svg" height={25} width={20}></Image>
+          <Image className="pb-1" src="/add.svg" alt="add" height={25} width={20}></Image>
           <span>NEW</span>
         </button>
         {/* MODAL */}
@@ -141,9 +145,9 @@ export default function FacultyArchive() {
                 <input
                   type="text"
                   className="py-1 px-3 border border-dark w-100 rounded text-center"
-                  value={inputValue}
+                  value={cCode}
                   onChange={(e) => {
-                    setInputValue(e.target.value);
+                    setClassCode(e.target.value);
                   }}
                 />
                 <p className="text-center mb-1 mt-3">SUBJECT NAME</p>
@@ -153,13 +157,13 @@ export default function FacultyArchive() {
                   className="py-1 px-3 border border-dark w-100 rounded text-center"
                   onChange={(e) => setsName(e.target.value)}
                 />
+                <p className="text-center text-danger">{errorMessage}</p>
               </div>
               <div className="modal-footer align-self-center">
                 <button
                   type="button"
                   className="btn btn-outline-dark"
                   onClick={addClass}
-                  data-bs-dismiss="modal"
                 >
                   Enter
                 </button>
@@ -178,6 +182,7 @@ export default function FacultyArchive() {
               <div className="text-end">
                 <Image
                   src="/three-dots.svg"
+                  alt="menu"
                   width={20}
                   height={20}
                   role="button"

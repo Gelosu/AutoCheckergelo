@@ -10,26 +10,36 @@ export default function Result() {
   const subjectname = searchParams.get("subjectname");
   const classcode = searchParams.get("classcode");
   const [professorname, setProfessorname] = useState("");
+  const [tests, setTests] = useState([]); // Store test data here
 
   useEffect(() => {
-    const fetchprofTUPCID = async () => {
-      try{
-         const response = await axios.get(`http://localhost:3001/getProfTUPCID/${subjectname}/${classcode}`)
-          const TUPCID = response.data.TUPCID
-          if (response) {
-            const responses = await axios.get(`http://localhost:3001/getProfName/${TUPCID}`) 
-            const {FIRSTNAME, MIDDLENAME, SURNAME} = responses.data
-            setProfessorname(FIRSTNAME + MIDDLENAME + SURNAME)
-          }else{
-            console.log("What")
-          }  
-      }catch(error){
-        console.log(error)
+    const fetchTestResults = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3001/getProfTUPCID/${subjectname}/${classcode}`
+        );
+        const TUPCID = response.data.TUPCID;
+        if (response) {
+          const professorResponse = await axios.get(
+            `http://localhost:3001/getProfName/${TUPCID}`
+          );
+          const { FIRSTNAME, MIDDLENAME, SURNAME } = professorResponse.data;
+          setProfessorname(`${FIRSTNAME} ${MIDDLENAME} ${SURNAME}`);
+          // Waiting for the test part in index.js
+          // const testsResponse = await axios.get(
+          //   `http://localhost:3001/getTests/${subjectname}/${classcode}`
+          // );
+          // setTests(testsResponse.data.tests);
+        } else {
+          console.log("No data");
+        }
+      } catch (error) {
+        console.error(error);
       }
-    }
-    fetchprofTUPCID();
-  },[subjectname, classcode])
-  
+    };
+
+    fetchTestResults();
+  }, [subjectname, classcode]);
 
   return (
     <main className="custom-m col-11 col-md-10 p-0">
@@ -39,25 +49,34 @@ export default function Result() {
             <img src="/back-arrow.svg" height={30} width={40} />
           </Link>
         </div>
-        <div className="d-flex justify-content-center flex-column container col-md-10 col-lg-7 rounded border border-dark bg-lightgray py-3">
-            <h5>{subjectname}</h5>
-            <h5>CLASS CODE: {classcode}</h5>
-            <h5>PROFESSOR NAME: {professorname}</h5>
-            <section className="container-fluid border border-dark rounded">
-                <div className="row">
-                    <p className="col-3 m-0 border border-secondary text-center custom-round1">TEST NO.</p>
-                    <p className="col-3 m-0 border border-secondary text-center">NO. OF CORRECT</p>
-                    <p className="col-3 m-0 border border-secondary text-center">WRONG QUESTIONS</p>
-                    <p className="col-3 m-0 border border-secondary text-center custom-round2">TOTAL SCORE</p>
-                </div>
-                {/* object value */}
-                <div className="row" key="">
-                <p className="col-3 border border-secondary text-center custom-round1"></p>
-                    <p className="col-3 border border-secondary text-center"></p>
-                    <p className="col-3 border border-secondary text-center"></p>
-                    <p className="col-3 border border-secondary text-center custom-round2"></p>
-                </div>
-            </section>
+        <div className="container-sm">
+          <div>
+            <p>Subject: {subjectname}</p>
+            <p>Class Code: {classcode}</p>
+            <p>Professor Name: {professorname}</p>
+          </div>
+          <div className="table-responsive">
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th>TEST NO.</th>
+                  <th>NO. OF CORRECT</th>
+                  <th>WRONG QUESTIONS</th>
+                  <th>TOTAL SCORE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tests.map((test, index) => (
+                  <tr key={index}>
+                    <td>{test.testNumber}</td>
+                    <td>{test.numCorrect}</td>
+                    <td>{test.numWrong}</td>
+                    <td>{test.totalScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
