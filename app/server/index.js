@@ -1071,7 +1071,7 @@ app.put("/updatefacultyinfos/:TUPCID", async (req, res) => {
 // Endpoint to add a new class
 app.post("/addclass", (req, res) => {
   const { TUPCID, class_code, class_name, subject_name } = req.body;
-  checkingClass(class_code, class_name, subject_name)
+  checkingClass(class_code, subject_name)
   .then((count) => {
     if (count >= 1) {
       res.status(409).send({message: "Class Already Exists"})
@@ -1099,11 +1099,11 @@ app.post("/addclass", (req, res) => {
 // Import necessary modules and setup your server
 
 // Endpoint to delete a class by classCode
-app.delete("/deleteclass/:class_name", (req, res) => {
-  const class_name = req.params.class_name;
+app.delete("/deleteclass/:tupcids/:class_name", (req, res) => {
+  const { tupcids, class_name } = req.params;
 
-  const query = "DELETE FROM class_table WHERE class_name = ?";
-  connection.query(query, [class_name], (error, results) => {
+  const query = "DELETE FROM class_table WHERE TUPCID = ? AND class_name = ?";
+  connection.query(query, [tupcids,class_name], (error, results) => {
     if (error) {
       console.error("Error deleting class: ", error);
       res.status(500).send("Error deleting class");
@@ -1301,6 +1301,81 @@ app.get("/getProfName/:TUPCID", async (req, res) => {
     console.log(error);
   }
 });
+
+
+
+// Endpoint to add a new test
+app.post('/addtest', (req, res) => {
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
+
+  const query = `INSERT INTO testpapers (TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?,?, ?, ?, ?, ?, NOW())`;
+
+  connection.query(query, [TUPCID, class_name, subject_name, class_code, test_name, test_number], (error, results) => {
+    if (error) {
+      console.error('Error adding test:', error);
+      res.status(500).json({ success: false, message: 'Failed to add test' });
+    } else {
+      console.log('Test added successfully');
+      res.status(200).json({ success: true, message: 'Test added successfully' });
+    }
+  });
+});
+
+//get the test 
+app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, res) => {
+  const { tupcid, classcode, classname, subjectname } = req.params;
+
+  try {
+    const query = "SELECT * FROM testpapers WHERE TUPCID = ? AND class_code = ? AND class_name = ? AND subject_name = ?";
+    const [rows] = await connection.query(query, [tupcid, classcode, classname, subjectname]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching test papers:", error);
+    res.status(500).json({ message: "Failed to fetch test papers" });
+  }
+});
+
+
+
+
+//delete the test...
+
+app.delete("/deletetest/:classcode/:testNumber/:testName", (req, res) => {
+  const { classcode, testNumber, testName } = req.params;
+
+  const query = "DELETE FROM testpapers WHERE  class_code = ? AND test_number = ? AND test_name = ?";
+  connection.query(query, [ classcode, testNumber, testName], (error, results) => {
+    if (error) {
+      console.error("Error deleting test: ", error);
+      res.status(500).send("Error deleting test");
+    } else if (results.affectedRows === 0) {
+      res.status(404).send("Test not found");
+    } else {
+      console.log("Test deleted successfully");
+      res.status(200).send("Test deleted successfully");
+    }
+  });
+});
+
+
+//updating test
+//not functionaing well
+app.put('/updatetestname/:classcode/:testName/:testNumber', (req, res) => {
+  const { classcode, testName, testNumber } = req.params;
+  console.log(`Classcode:${classcode} Testname:${testName} TestNumber:${testNumber}`)
+  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE class_code = ?`;
+
+  connection.query(updateQuery, [testName,testNumber,classcode], (error, results) => {
+    if (error) {
+      console.error("Error updating test:", error);
+      res.status(500).json({ success: false, error: "Error updating test" });
+    } else {
+      res.status(200).json({ success: true });
+    }
+  });
+});
+
 
 //for server
 app.listen(3001, () => {

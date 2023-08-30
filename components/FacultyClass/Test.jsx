@@ -1,39 +1,117 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTupcid } from "@/app/provider";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function FacultyClassTest() {
-  const [test, setTest] = useState([]);
+  const { tupcids } = useTupcid();
+  const [testpaper, setTestpaper] = useState([]);
   const [testName, setTestName] = useState("");
-  const [renametest, setRenameTest] = useState("");
+  const [testNumber, setTestNumber] = useState("");
   const searchparams = useSearchParams();
-  const classname = searchparams.get("classname")
-   const subjectname = searchparams.get("subjectname")
-    const classcode = searchparams.get("classcode")
-  const addTest = () => {
+  const classname = searchparams.get("classname");
+  const subjectname = searchparams.get("subjectname");
+  const classcode = searchparams.get("classcode");
+  const router = useRouter();
+  //getting data based on tupcid again...
+  useEffect(() => {
+    fetchAndSetTestpapers();
+    const interval = setInterval(fetchAndSetTestpapers, 1000);
+    return () => clearInterval(interval);
+  }, [tupcids]);
+
+  const presetPage = () => {
+    router.push(
+      "/Classroom/F/Test/PresetTest"
+    )
+  }
+
+  const fetchAndSetTestpapers = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/gettestpaper/${tupcids}/${classcode}/${classname}/${subjectname} `
+      );
+      if (response.status === 200) {
+        setTestpaper(response.data);
+      } else {
+        console.error("Error fetching test names");
+      }
+    } catch (error) {
+      console.error("Error fetching testname:", error);
+    }
+  };
+
+  //adding test
+  const addTest = async () => {
     if (testName.trim() !== "") {
-      setTest([...test, testName]);
-      setTestName("");
+      try {
+        // Send a POST request to your backend to add the test
+        const response = await axios.post("http://localhost:3001/addtest", {
+          TUPCID: tupcids,
+          class_name: classname,
+          subject_name: subjectname,
+          class_code: classcode,
+          test_name: testName,
+          test_number: testNumber,
+        });
+
+        // Assuming your backend returns a success message
+        if (response.data.success) {
+          fetchTest();
+          setTest([...test, testName]);
+          setTestName("");
+        }
+      } catch (error) {
+        console.error("Error adding test:", error);
+      }
     }
   };
-  const deleteTest = (index) => {
-    const deleted = [...test];
-    deleted.splice(index, 1);
-    setTest(deleted);
-  };
-  const renameTest = (index) => {
-    if (renametest.trim() !== "") {
-      const renamedTest = [...test];
-      renamedTest.splice(index, 1, renametest);
-      setTest(renamedTest);
-      setRenameTest("");
+
+  //delete
+
+  const deletetest = async (classcode, testNumber, testName) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:3001/deletetest/${classcode}/${testNumber}/${testName}`
+      );
+      if (response.status === 200) {
+        console.log("Test deleted successfully");
+        fetchTest(); // Fetch updated test list
+      } else {
+        console.error("Error deleting test");
+      }
+    } catch (error) {
+      console.error("Error deleting test:", error);
     }
   };
-  const reset = () => {
-    setTest([]);
+
+  //updating the test
+  // Update test name
+  //update not functioning well
+  const updateTestNameAndNumber = async () => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/updatetestname/${classcode}/${testName}/${testNumber}`
+      );
+      if (response.status === 200) {
+        console.log("Test name and number updated successfully");
+        fetchTest();
+      } else {
+        console.error("Error updating test name and number");
+      }
+    } catch (error) {
+      console.error("Error updating test name and number:", error);
+    }
   };
+
+  const fetchTest = async () => {
+    await fetchAndSetTestpapers();
+  };
+
   return (
     <main className="col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
@@ -41,25 +119,27 @@ export default function FacultyClassTest() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>{classname} CLASSCODE: {classcode} SUBJECT: {subjectname}</span>
+          <span>
+            {classname} CLASSCODE: {classcode} SUBJECT: {subjectname}
+          </span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark">
             <h4>TEST</h4>
           </a>
           <Link
-    href={{
-      pathname: "/Classroom/F/Students",
-      query: {
-        classname: classname,
-        classcode: classcode,        
-        subjectname: subjectname,    
-      },
-    }}
-    className="link-dark text-decoration-none"
-  >
-    <h4>STUDENTS</h4>
-  </Link>
+            href={{
+              pathname: "/Classroom/F/Students",
+              query: {
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}
+            className="link-dark text-decoration-none"
+          >
+            <h4>STUDENTS</h4>
+          </Link>
         </div>
         <div className="d-flex gap-3">
           <button
@@ -72,12 +152,10 @@ export default function FacultyClassTest() {
             <span>ADD</span>
           </button>
           <button
-            type="button"
-            className="btn btn-outline-dark px-3"
-            data-bs-toggle="modal"
-            data-bs-target="#Resetpopup2"
-          >
-            RESET
+          type="button"
+          className="btn btn-outline-dark pe-3"
+          onClick={presetPage}>
+           PRESET
           </button>
         </div>
         {/* add MODAL */}
@@ -101,7 +179,14 @@ export default function FacultyClassTest() {
               </div>
               <div className="modal-body px-5">
                 <h4 className="text-center mb-2">ADDING TEST</h4>
-                <p className="text-start mb-1 ">CLASS NAME</p>
+                <p className="text-start mb-1 ">TEST NUMBER</p>
+                <input
+                  type="text"
+                  className="py-1 px-3 border border-dark w-100 rounded text-start"
+                  onChange={(e) => setTestNumber(e.target.value)}
+                  value={testNumber}
+                />
+                <p className="text-start mb-1 ">TEST NAME</p>
                 <input
                   type="text"
                   className="py-1 px-3 border border-dark w-100 rounded text-start"
@@ -123,57 +208,20 @@ export default function FacultyClassTest() {
           </div>
         </div>
         {/* End MODAL */}
-        {/* Reset modal */}
-        <div
-          className="modal fade"
-          id="Resetpopup2"
-          tabIndex="-1"
-          aria-labelledby="ModalLabel"
-          aria-hidden="true"
-          data-bs-backdrop="static"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header align-self-center pb-0 pt-0">
-                <h5 className="modal-title pt-5" id="ModalLabel">
-                  RESET TEST LISTS
-                </h5>
-              </div>
-              <div className="modal-body d-flex flex-column align-items-center pb-0 text-center">
-                <p className="mb-0 ">Are you sure you want to reset the list?</p>
-                <p>
-                  This will delete all of the lists including the contents of it
-                </p>
-              </div>
-              <div className="modal-footer align-self-center d-flex gap-4">
-                <button
-                  type="button"
-                  className="btn btn-outline-dark mt-0"
-                  onClick={reset}
-                  data-bs-dismiss="modal"
-                >
-                  <h6 className="mx-2 my-1">CONFIRM</h6>
-                </button>
-                <button
-                  type="button"
-                  data-bs-dismiss="modal"
-                  className="btn btn-outline-dark mt-0"
-                >
-                  <h6 className="mx-2 my-1">CANCEL</h6>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* End Modal */}
+
         {/* Start */}
         <div className="container-fluid d-flex flex-wrap pt-2 flex-column gap-2 overflow-auto">
-          {test.map((testss, index) => (
-            <div className="row py-sm-3 py-5 border border-dark rounded">
-              <a href="/Test/TestPaper" className="link-dark text-decoration-none col-11 align-self-center">
-              
-                <p key={index} className="text-center m-0">
-                  {testss}
+          {testpaper.map((test, index) => (
+            <div
+              className="row py-sm-3 py-5 border border-dark rounded"
+              key={index}
+            >
+              <a
+                href="/Test/TestPaper"
+                className="link-dark text-decoration-none col-11 align-self-center"
+              >
+                <p className="text-center m-0">
+                  {test.test_number}: {test.test_name}
                 </p>
               </a>
               <div className="col-1 text-end align-self-center p-0 pe-2">
@@ -194,7 +242,13 @@ export default function FacultyClassTest() {
                   <button
                     type="button"
                     className="dropdown-item"
-                    onClick={() => deleteTest(index)}
+                    onClick={() =>
+                      deletetest(
+                        test.class_code,
+                        test.test_number,
+                        test.test_name
+                      )
+                    }
                   >
                     Remove
                   </button>
@@ -209,43 +263,61 @@ export default function FacultyClassTest() {
                 </ul>
                 {/* rename MOdal */}
                 <div
-                  class="modal fade"
+                  className="modal fade"
                   id={`renamePopup${index}`}
-                  tabindex="-1"
+                  tabIndex="-1"
                   aria-labelledby="renamePopupLabel"
                   aria-hidden="true"
                   data-bs-backdrop="static"
                 >
-                  <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
+                  <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content">
                       <button
                         type="button"
-                        class="btn-close align-self-end p-3"
+                        className="btn-close align-self-end p-3"
                         data-bs-dismiss="modal"
                         aria-label="Close"
                       ></button>
-                      <div class="modal-header align-self-center pb-0 pt-0">
-                        <h5 class="modal-title" id="ModalLabel">
+                      <div className="modal-header align-self-center pb-0 pt-0">
+                        <h5 className="modal-title" id="ModalLabel">
                           RENAME TEST
                         </h5>
                       </div>
-                      <div class="modal-body d-flex flex-column pb-2">
+
+                      <div className="modal-body d-flex flex-column pb-2">
+                        <h6 className="align-self-start ps-5 ms-2">
+                          TEST NUMBER
+                        </h6>
+                        <input
+                          
+                          type="text"
+                          className="py-1 px-3 border border-dark w-75 rounded align-self-center"
+                          onChange={(e) => setTestNumber(e.target.value)}
+                          value={testNumber}
+                        />
+
                         <h6 className="align-self-start ps-5 ms-2">
                           TEST NAME
                         </h6>
                         <input
                           type="text"
                           className="py-1 px-3 border border-dark w-75 rounded align-self-center"
-                          onChange={(e) => setRenameTest(e.target.value)}
-                          value={renametest}
+                          onChange={(e) => setTestName(e.target.value)}
+                          value={testName}
                         />
                       </div>
-                      <div class="modal-footer align-self-center">
+
+                      <div className="modal-footer align-self-center">
                         <button
                           type="button"
-                          class="btn btn-outline-dark mt-0"
+                          className="btn btn-outline-dark mt-0"
                           data-bs-dismiss="modal"
-                          onClick={() => renameTest(index)}
+                          onClick={() =>
+                            updateTestNameAndNumber(
+                              test.test_name,
+                              test.test_number
+                            )
+                          }
                         >
                           <h6 className="mx-2 my-1">SAVE</h6>
                         </button>
