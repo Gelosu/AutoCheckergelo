@@ -1097,6 +1097,7 @@ app.post("/addclass", (req, res) => {
 
 
 // Import necessary modules and setup your server
+//code validation for faculty
 
 // Endpoint to delete a class by classCode
 app.delete("/deleteclass/:tupcids/:class_name", (req, res) => {
@@ -1306,11 +1307,11 @@ app.get("/getProfName/:TUPCID", async (req, res) => {
 
 // Endpoint to add a new test
 app.post('/addtest', (req, res) => {
-  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, index_number } = req.body;
 
-  const query = `INSERT INTO testpapers (TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?,?, ?, ?, ?, ?, NOW())`;
+  const query = `INSERT INTO testpapers (TUPCID, index_number, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?,?,?, ?, ?, ?, ?, NOW())`;
 
-  connection.query(query, [TUPCID, class_name, subject_name, class_code, test_name, test_number], (error, results) => {
+  connection.query(query, [TUPCID, index_number, class_name, subject_name, class_code, test_name, test_number], (error, results) => {
     if (error) {
       console.error('Error adding test:', error);
       res.status(500).json({ success: false, message: 'Failed to add test' });
@@ -1341,11 +1342,11 @@ app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, 
 
 //delete the test...
 
-app.delete("/deletetest/:classcode/:testNumber/:testName", (req, res) => {
-  const { classcode, testNumber, testName } = req.params;
+app.delete("/deletetest/:classcode/:testNumber/:testName/:index", (req, res) => {
+  const { classcode, testNumber, testName,index } = req.params;
 
-  const query = "DELETE FROM testpapers WHERE  class_code = ? AND test_number = ? AND test_name = ?";
-  connection.query(query, [ classcode, testNumber, testName], (error, results) => {
+  const query = "DELETE FROM testpapers WHERE  class_code = ? AND test_number = ? AND test_name = ? AND index_number = ?";
+  connection.query(query, [ classcode, testNumber, testName, index], (error, results) => {
     if (error) {
       console.error("Error deleting test: ", error);
       res.status(500).send("Error deleting test");
@@ -1361,12 +1362,12 @@ app.delete("/deletetest/:classcode/:testNumber/:testName", (req, res) => {
 
 //updating test
 //not functionaing well
-app.put('/updatetestname/:classcode/:testName/:testNumber', (req, res) => {
-  const { classcode, testName, testNumber } = req.params;
-  console.log(`Classcode:${classcode} Testname:${testName} TestNumber:${testNumber}`)
-  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE class_code = ?`;
+app.put('/updatetest/:classcode/:testName/:testNumber/:index', (req, res) => {
+  const { classcode, testName, testNumber,index } = req.params;
 
-  connection.query(updateQuery, [testName,testNumber,classcode], (error, results) => {
+  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE class_code = ? AND index_number=?`;
+
+  connection.query(updateQuery, [testName, testNumber, classcode,index], (error, results) => {
     if (error) {
       console.error("Error updating test:", error);
       res.status(500).json({ success: false, error: "Error updating test" });
@@ -1376,6 +1377,23 @@ app.put('/updatetestname/:classcode/:testName/:testNumber', (req, res) => {
   });
 });
 
+
+//updating the index...
+app.put('/updateindexnumbers', (req, res) => {
+  const updatedTestpaper = req.body;
+
+  const updateQuery = `UPDATE testpapers SET index_number = ? WHERE class_code = ? AND test_number = ? AND test_name = ?`;
+
+  updatedTestpaper.forEach(async (test) => {
+    try {
+      await connection.query(updateQuery, [test.index_number, test.class_code, test.test_number, test.test_name]);
+    } catch (error) {
+      console.error("Error updating index number:", error);
+    }
+  });
+
+  res.status(200).json({ success: true });
+});
 
 //for server
 app.listen(3001, () => {

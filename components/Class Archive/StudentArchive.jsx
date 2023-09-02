@@ -8,7 +8,7 @@ export default function StudentArchive() {
   const [inputValue, setInputValue] = useState("");
   const [message, setMessage] = useState("");
   const [userClasses, setUserClasses] = useState([]);
-  var { tupcids } = useTupcid();
+  const { tupcids } = useTupcid();
 
   useEffect(() => {
     const fetchClassesInterval = setInterval(() => {
@@ -52,7 +52,7 @@ export default function StudentArchive() {
             const addClassResponse = await axios.post(
               "http://localhost:3001/addclassstud",
               {
-                TUPCID: tupcids, // Replace with the actual TUPCID
+                TUPCID: tupcids, 
                 class_code: inputValue,
                 subject_name: subjectName,
               }

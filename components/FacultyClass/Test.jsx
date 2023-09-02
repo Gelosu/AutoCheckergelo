@@ -17,6 +17,11 @@ export default function FacultyClassTest() {
   const subjectname = searchparams.get("subjectname");
   const classcode = searchparams.get("classcode");
   const router = useRouter();
+  const [editTestIndex, setEditTestIndex] = useState(-1);
+  const [editTestName, setEditTestName] = useState("");
+  const [editTestNumber, setEditTestNumber] = useState("");
+
+
   //getting data based on tupcid again...
   useEffect(() => {
     fetchAndSetTestpapers();
@@ -33,9 +38,10 @@ export default function FacultyClassTest() {
   const fetchAndSetTestpapers = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/gettestpaper/${tupcids}/${classcode}/${classname}/${subjectname} `
+        `http://localhost:3001/gettestpaper/${tupcids}/${classcode}/${classname}/${subjectname}`
       );
       if (response.status === 200) {
+        // Use the received testpaper data directly
         setTestpaper(response.data);
       } else {
         console.error("Error fetching test names");
@@ -44,11 +50,14 @@ export default function FacultyClassTest() {
       console.error("Error fetching testname:", error);
     }
   };
+  
+  
 
   //adding test
   const addTest = async () => {
     if (testName.trim() !== "") {
       try {
+        const nextIndex = testpaper.length + 1;
         // Send a POST request to your backend to add the test
         const response = await axios.post("http://localhost:3001/addtest", {
           TUPCID: tupcids,
@@ -57,12 +66,16 @@ export default function FacultyClassTest() {
           class_code: classcode,
           test_name: testName,
           test_number: testNumber,
+          index_number: nextIndex,
         });
-
+  
         // Assuming your backend returns a success message
         if (response.data.success) {
           fetchTest();
-          setTest([...test, testName]);
+          // Update index numbers in the frontend
+          updateIndexNumbersFrontend();
+          // Update index numbers in the database
+          await updateIndexNumbersInDatabase();
           setTestName("");
         }
       } catch (error) {
@@ -72,15 +85,27 @@ export default function FacultyClassTest() {
   };
 
   //delete
-
-  const deletetest = async (classcode, testNumber, testName) => {
+  const deletetest = async (classcode, testNumber, testName, index) => {
     try {
       const response = await axios.delete(
-        `http://localhost:3001/deletetest/${classcode}/${testNumber}/${testName}`
+        `http://localhost:3001/deletetest/${classcode}/${testNumber}/${testName}/${index}`
       );
       if (response.status === 200) {
         console.log("Test deleted successfully");
-        fetchTest(); // Fetch updated test list
+  
+        // Remove the deleted test from the frontend representation
+        const updatedTestpaper = testpaper.filter((test) => test.index_number !== index);
+        setTestpaper(updatedTestpaper);
+  
+        // Update index numbers in the remaining tests in the frontend
+        const updatedIndexFrontend = updatedTestpaper.map((test, newIndex) => ({
+          ...test,
+          index_number: newIndex + 1,
+        }));
+        setTestpaper(updatedIndexFrontend);
+  
+        // Update index numbers in the database
+        await updateIndexNumbersInDatabase(updatedIndexFrontend);
       } else {
         console.error("Error deleting test");
       }
@@ -88,25 +113,59 @@ export default function FacultyClassTest() {
       console.error("Error deleting test:", error);
     }
   };
+  
+  
 
-  //updating the test
-  // Update test name
-  //update not functioning well
-  const updateTestNameAndNumber = async () => {
+  /// Update index numbers for tests after the deleted test in the database
+  const updateIndexNumbersFrontend = () => {
+    const updatedTestpaper = testpaper.map((test, index) => ({
+      ...test,
+      index_number: index + 1,
+    }));
+    setTestpaper(updatedTestpaper);
+  };
+  
+  const updateIndexNumbersInDatabase = async () => {
     try {
+      // Prepare the updated testpaper array with only index numbers and relevant identifiers
+      const updatedIndexNumbers = testpaper.map((test) => ({
+        index_number: test.index_number,
+        class_code: test.class_code,
+        test_number: test.test_number,
+        test_name: test.test_name,
+      }));
+  
+      // Send a PUT request to update index numbers in the backend
       const response = await axios.put(
-        `http://localhost:3001/updatetestname/${classcode}/${testName}/${testNumber}`
+        "http://localhost:3001/updateindexnumbers",
+        updatedIndexNumbers
       );
-      if (response.status === 200) {
-        console.log("Test name and number updated successfully");
-        fetchTest();
+  
+      if (response.data.success) {
+        console.log("Index numbers updated in the database");
       } else {
-        console.error("Error updating test name and number");
+        console.error("Error updating index numbers in the database");
       }
+    } catch (error) {
+      console.error("Error updating index numbers in the database:", error);
+    }
+  };
+  
+  
+
+  const updateTestNameAndNumber = async (index) => {
+    const updatedTest = testpaper[index];
+    try {
+      console.log("index number:", index)
+      const response = await axios.put(
+        `http://localhost:3001/updatetest/${classcode}/${testName}/${testNumber}/${index}`
+      );
+      // ...
     } catch (error) {
       console.error("Error updating test name and number:", error);
     }
   };
+  
 
   const fetchTest = async () => {
     await fetchAndSetTestpapers();
@@ -199,7 +258,11 @@ export default function FacultyClassTest() {
                   type="button"
                   className="btn btn-outline-dark"
                   data-bs-dismiss="modal"
-                  onClick={addTest}
+                  onClick={() => {
+                    addTest();
+                    setTestNumber(""); // Clear test number input
+                    setTestName(""); // Clear test name input
+                  }}
                 >
                   ADD
                 </button>
@@ -216,12 +279,15 @@ export default function FacultyClassTest() {
               className="row py-sm-3 py-5 border border-dark rounded"
               key={index}
             >
+              <div className="text-left m-0">
+             <p className="m-0">{test.index_number}</p>
+              </div>
               <a
                 href="/Test/TestPaper"
                 className="link-dark text-decoration-none col-11 align-self-center"
               >
                 <p className="text-center m-0">
-                  {test.test_number}: {test.test_name}
+                {test.test_number}: {test.test_name}
                 </p>
               </a>
               <div className="col-1 text-end align-self-center p-0 pe-2">
@@ -246,20 +312,26 @@ export default function FacultyClassTest() {
                       deletetest(
                         test.class_code,
                         test.test_number,
-                        test.test_name
+                        test.test_name,
+                        test.index_number
                       )
                     }
                   >
                     Remove
                   </button>
                   <button
-                    type="button"
-                    className="dropdown-item"
-                    data-bs-toggle="modal"
-                    data-bs-target={`#renamePopup${index}`}
-                  >
-                    Rename
-                  </button>
+                  type="button"
+                  className="dropdown-item"
+                  data-bs-toggle="modal"
+                  data-bs-target={`#renamePopup${index}`}
+                  onClick={() => {
+                    setEditTestIndex(index);
+                    setEditTestName(test.test_name);
+                    setEditTestNumber(test.test_number);
+                  }}
+                >
+                  Rename
+                </button>
                 </ul>
                 {/* rename MOdal */}
                 <div
@@ -312,12 +384,11 @@ export default function FacultyClassTest() {
                           type="button"
                           className="btn btn-outline-dark mt-0"
                           data-bs-dismiss="modal"
-                          onClick={() =>
-                            updateTestNameAndNumber(
-                              test.test_name,
-                              test.test_number
-                            )
-                          }
+                          onClick={() => {
+                            updateTestNameAndNumber(index);
+                            setTestNumber(""); // Clear test number input
+                            setTestName(""); // Clear test name input
+                          }}
                         >
                           <h6 className="mx-2 my-1">SAVE</h6>
                         </button>
