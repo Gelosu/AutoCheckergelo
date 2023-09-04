@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const connection = require("./db");
 const bcryptjs = require("bcryptjs");
 const nodemailer = require("nodemailer"); // Import nodemailer for sending emails
+const uuid = require('uuid');
 
 const app = express();
 
@@ -1304,22 +1305,36 @@ app.get("/getProfName/:TUPCID", async (req, res) => {
 });
 
 
+// Function to generate a 5-character code from a UUID
+function generateCodeFromUUID() {
+  const uuidValue = uuid.v4(); // Generate a random UUID
+  const code = uuidValue.substring(0, 5); // Get the first 5 characters of the UUID
+  return code;
+}
+
 
 // Endpoint to add a new test
 app.post('/addtest', (req, res) => {
-  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, index_number } = req.body;
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
 
-  const query = `INSERT INTO testpapers (TUPCID, index_number, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?,?,?, ?, ?, ?, ?, NOW())`;
+  // Generate a unique code from the UUID
+  const testCode = generateCodeFromUUID();
 
-  connection.query(query, [TUPCID, index_number, class_name, subject_name, class_code, test_name, test_number], (error, results) => {
-    if (error) {
-      console.error('Error adding test:', error);
-      res.status(500).json({ success: false, message: 'Failed to add test' });
-    } else {
-      console.log('Test added successfully');
-      res.status(200).json({ success: true, message: 'Test added successfully' });
+  const query = `INSERT INTO testpapers (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+
+  connection.query(
+    query,
+    [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number],
+    (error, results) => {
+      if (error) {
+        console.error('Error adding test:', error);
+        res.status(500).json({ success: false, message: 'Failed to add test' });
+      } else {
+        console.log('Test added successfully');
+        res.status(200).json({ success: true, message: 'Test added successfully', testCode });
+      }
     }
-  });
+  );
 });
 
 //get the test 
@@ -1342,11 +1357,12 @@ app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, 
 
 //delete the test...
 
-app.delete("/deletetest/:classcode/:testNumber/:testName/:index", (req, res) => {
-  const { classcode, testNumber, testName,index } = req.params;
+// Delete the test
+app.delete("/deletetest/:testCode", (req, res) => {
+  const { testCode } = req.params;
 
-  const query = "DELETE FROM testpapers WHERE  class_code = ? AND test_number = ? AND test_name = ? AND index_number = ?";
-  connection.query(query, [ classcode, testNumber, testName, index], (error, results) => {
+  const query = "DELETE FROM testpapers WHERE uid = ?";
+  connection.query(query, [testCode], (error, results) => {
     if (error) {
       console.error("Error deleting test: ", error);
       res.status(500).send("Error deleting test");
@@ -1359,15 +1375,14 @@ app.delete("/deletetest/:classcode/:testNumber/:testName/:index", (req, res) => 
   });
 });
 
+// Update test
+app.put("/updatetest/:testCode", (req, res) => {
+  const { testCode } = req.params;
+  const { testName, testNumber } = req.body;
 
-//updating test
-//not functionaing well
-app.put('/updatetest/:classcode/:testName/:testNumber/:index', (req, res) => {
-  const { classcode, testName, testNumber,index } = req.params;
+  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE uid = ?`;
 
-  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE class_code = ? AND index_number=?`;
-
-  connection.query(updateQuery, [testName, testNumber, classcode,index], (error, results) => {
+  connection.query(updateQuery, [testName, testNumber, testCode], (error, results) => {
     if (error) {
       console.error("Error updating test:", error);
       res.status(500).json({ success: false, error: "Error updating test" });
@@ -1378,22 +1393,8 @@ app.put('/updatetest/:classcode/:testName/:testNumber/:index', (req, res) => {
 });
 
 
-//updating the index...
-app.put('/updateindexnumbers', (req, res) => {
-  const updatedTestpaper = req.body;
 
-  const updateQuery = `UPDATE testpapers SET index_number = ? WHERE class_code = ? AND test_number = ? AND test_name = ?`;
 
-  updatedTestpaper.forEach(async (test) => {
-    try {
-      await connection.query(updateQuery, [test.index_number, test.class_code, test.test_number, test.test_name]);
-    } catch (error) {
-      console.error("Error updating index number:", error);
-    }
-  });
-
-  res.status(200).json({ success: true });
-});
 
 //for server
 app.listen(3001, () => {

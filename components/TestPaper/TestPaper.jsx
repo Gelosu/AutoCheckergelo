@@ -1,4 +1,10 @@
+"use client"
+import { useSearchParams } from "next/navigation";
+
 export default function TestPaper() {
+  const searchparams = useSearchParams();
+  const testNumber = searchparams.get("testNumber")
+  const testName = searchparams.get("testName")
   return (
     <main className="container-fluid p-sm-4 py-3 h-100">
       <section>
@@ -7,7 +13,7 @@ export default function TestPaper() {
             <img src="/back-arrow.png" />
           </a>
           &nbsp;
-          <h3 className="m-0">&#123;TEST NO&#125;&#58;&#123;TEST NAME&#125;</h3>
+          <h3 className="m-0">{testNumber}:{testName}</h3>
         </div>
         <ul className="d-flex flex-wrap justify-content-around mt-3 list-unstyled">
           <li className="m-0 fs-5 text-decoration-underline">TEST PAPER</li>
@@ -34,11 +40,11 @@ export default function TestPaper() {
               type="text"
               className="col-sm-8 rounded border border-dark text-sm-start text-center"
             >
-              <option selected>Choose...</option>
-              <option value="">IDENTIFICATION</option>
-              <option value="">MULTIPLE CHOICE</option>
-              <option value="">NUMERICAL</option>
-              <option value="">TRUE OR FALSE</option>
+              <option value=""selected disabled hidden>Choose...</option>
+              <option value="IDENTIFICATION">IDENTIFICATION</option>
+              <option value="MULTIPLE CHOICE">MULTIPLE CHOICE</option>
+              <option value="NUMERICAL">NUMERICAL</option>
+              <option value="TRUE OR FALSE">TRUE OR FALSE</option>
             </select>
           </form>
           <form className="row p-sm-2 px-3">
