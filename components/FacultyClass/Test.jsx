@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -19,8 +18,7 @@ export default function FacultyClassTest() {
   const classcode = searchparams.get("classcode");
   const router = useRouter();
   const [edittestname, setEdittestname] = useState("");
-const [edittestnumber, setEdittestnumber] = useState("");
-
+  const [edittestnumber, setEdittestnumber] = useState("");
 
   // Getting data based on tupcid again...
   useEffect(() => {
@@ -54,14 +52,18 @@ const [edittestnumber, setEdittestnumber] = useState("");
     if (testName.trim() !== "") {
       try {
         // Send a POST request to your backend to add the test
-        const response = await axios.post("http://localhost:3001/addtest", {
-          TUPCID: tupcids,
-          class_name: classname,
-          subject_name: subjectname,
-          class_code: classcode,
-          test_name: testName,
-          test_number: testNumber,
-        });
+        const response = await axios.post(
+          "http://localhost:3001/addtestandpreset",
+          {
+            TUPCID: tupcids,
+            class_name: classname,
+            subject_name: subjectname,
+            class_code: classcode,
+            test_name: testName,
+            test_number: testNumber,
+            thumbnail: 0,
+          }
+        );
 
         // Assuming your backend returns a success message
         if (response.data.success) {
@@ -76,48 +78,45 @@ const [edittestnumber, setEdittestnumber] = useState("");
   };
 
   // Delete
-const deleteTest = async (testCode) => {
-  try {
-    console.log("checking uid:...", testCode)
-    const response = await axios.delete(
-      `http://localhost:3001/deletetest/${testCode}`
-    );
-    if (response.status === 200) {
-      console.log("Test deleted successfully");
-      fetchTest();
-    } else {
-      console.error("Error deleting test");
-    }
-  } catch (error) {
-    console.error("Error deleting test:", error);
-  }
-};
-
-// Update
-const updateTestNameAndNumber = async (testCode) => {
-  try {
-    const response = await axios.put(
-      `http://localhost:3001/updatetest/${testCode}`,
-      {
-        testName: edittestname, 
-        testNumber: edittestnumber, 
+  const deleteTest = async (testCode) => {
+    try {
+      console.log("checking uid:...", testCode);
+      const response = await axios.delete(
+        `http://localhost:3001/deletetest/${testCode}`
+      );
+      if (response.status === 200) {
+        console.log("Test deleted successfully");
+        fetchTest();
+      } else {
+        console.error("Error deleting test");
       }
-    );
-    if (response.data.success) {
-      console.log("Test name and number updated successfully");
-      fetchTest();
-      setEdittestname(""); // Clear edittestname input
-      setEdittestnumber(""); // Clear edittestnumber input
-    } else {
-      console.error("Error updating test name and number");
+    } catch (error) {
+      console.error("Error deleting test:", error);
     }
-  } catch (error) {
-    console.error("Error updating test name and number:", error);
-  }
-};
+  };
 
-
-
+  // Update
+  const updateTestNameAndNumber = async (testCode) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/updatetest/${testCode}`,
+        {
+          testName: edittestname,
+          testNumber: edittestnumber,
+        }
+      );
+      if (response.data.success) {
+        console.log("Test name and number updated successfully");
+        fetchTest();
+        setEdittestname(""); // Clear edittestname input
+        setEdittestnumber(""); // Clear edittestnumber input
+      } else {
+        console.error("Error updating test name and number");
+      }
+    } catch (error) {
+      console.error("Error updating test name and number:", error);
+    }
+  };
 
   const fetchTest = async () => {
     await fetchAndSetTestpapers();
@@ -237,7 +236,7 @@ const updateTestNameAndNumber = async (testCode) => {
                 className="link-dark text-decoration-none col-11 align-self-center"
               >
                 <p className="text-center m-0">
-                  {test.uid}  -------  {test.test_number}: {test.test_name}
+                  {test.test_number}: {test.test_name}
                 </p>
               </a>
               <div className="col-1 text-end align-self-center p-0 pe-2">
@@ -276,65 +275,65 @@ const updateTestNameAndNumber = async (testCode) => {
                   </button>
                 </ul>
                 {/* Rename Modal */}
-<div
-  className="modal fade"
-  id={`renamePopup${test.uid}`}
-  tabIndex="-1"
-  aria-labelledby="renamePopupLabel"
-  aria-hidden="true"
-  data-bs-backdrop="static"
->
-  <div className="modal-dialog modal-dialog-centered">
-    <div className="modal-content">
-      <button
-        type="button"
-        className="btn-close align-self-end p-3"
-        data-bs-dismiss="modal"
-        aria-label="Close"
-      ></button>
-      <div className="modal-header align-self-center pb-0 pt-0">
-        <h5 className="modal-title" id="ModalLabel">
-          RENAME TEST
-        </h5>
-      </div>
+                <div
+                  className="modal fade"
+                  id={`renamePopup${test.uid}`}
+                  tabIndex="-1"
+                  aria-labelledby="renamePopupLabel"
+                  aria-hidden="true"
+                  data-bs-backdrop="static"
+                >
+                  <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content">
+                      <button
+                        type="button"
+                        className="btn-close align-self-end p-3"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                      ></button>
+                      <div className="modal-header align-self-center pb-0 pt-0">
+                        <h5 className="modal-title" id="ModalLabel">
+                          RENAME TEST
+                        </h5>
+                      </div>
 
-      <div className="modal-body d-flex flex-column pb-2">
-        <h6 className="align-self-start ps-5 ms-2">
-          TEST NUMBER
-        </h6>
-        <input
-          type="text"
-          className="py-1 px-3 border border-dark w-100 rounded text-start"
-          onChange={(e) => setEdittestnumber(e.target.value)} // Use setEdittestnumber
-          value={edittestnumber}
-        />
-        <p className="text-start mb-1 ">TEST NAME</p>
-        <input
-          type="text"
-          className="py-1 px-3 border border-dark w-100 rounded text-start"
-          onChange={(e) => setEdittestname(e.target.value)} // Use setEdittestname
-          value={edittestname}
-        />
-      </div>
+                      <div className="modal-body d-flex flex-column pb-2">
+                        <h6 className="align-self-start ps-5 ms-2">
+                          TEST NUMBER
+                        </h6>
+                        <input
+                          type="text"
+                          className="py-1 px-3 border border-dark w-100 rounded text-start"
+                          onChange={(e) => setEdittestnumber(e.target.value)} // Use setEdittestnumber
+                          value={edittestnumber}
+                        />
+                        <p className="text-start mb-1 ">TEST NAME</p>
+                        <input
+                          type="text"
+                          className="py-1 px-3 border border-dark w-100 rounded text-start"
+                          onChange={(e) => setEdittestname(e.target.value)} // Use setEdittestname
+                          value={edittestname}
+                        />
+                      </div>
 
-      <div className="modal-footer align-self-center">
-        <button
-          type="button"
-          className="btn btn-outline-dark mt-0"
-          data-bs-dismiss="modal"
-          onClick={() => {
-            updateTestNameAndNumber(test.uid);
-            setEdittestnumber(""); // Clear edittestnumber input
-            setEdittestname(""); // Clear edittestname input
-          }}
-        >
-          <h6 className="mx-2 my-1">SAVE</h6>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-{/* End Rename Modal */}
+                      <div className="modal-footer align-self-center">
+                        <button
+                          type="button"
+                          className="btn btn-outline-dark mt-0"
+                          data-bs-dismiss="modal"
+                          onClick={() => {
+                            updateTestNameAndNumber(test.uid);
+                            setEdittestnumber("");
+                            setEdittestname(""); 
+                          }}
+                        >
+                          <h6 className="mx-2 my-1">SAVE</h6>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* End Rename Modal */}
               </div>
             </div>
           ))}

@@ -6,7 +6,7 @@ const expressSession = require("express-session");
 const cookieParser = require("cookie-parser");
 const connection = require("./db");
 const bcryptjs = require("bcryptjs");
-const nodemailer = require("nodemailer"); // Import nodemailer for sending emails
+const nodemailer = require("nodemailer");
 const uuid = require('uuid');
 
 const app = express();
@@ -1314,28 +1314,34 @@ function generateCodeFromUUID() {
 
 
 // Endpoint to add a new test
-app.post('/addtest', (req, res) => {
-  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
+// Endpoint to add a new test and preset
+app.post('/addtestandpreset', (req, res) => {
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail } = req.body;
 
   // Generate a unique code from the UUID
   const testCode = generateCodeFromUUID();
 
-  const query = `INSERT INTO testpapers (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+  const testQuery = `
+    INSERT INTO testpapers 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
-  connection.query(
-    query,
-    [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number],
-    (error, results) => {
-      if (error) {
-        console.error('Error adding test:', error);
-        res.status(500).json({ success: false, message: 'Failed to add test' });
-      } else {
-        console.log('Test added successfully');
-        res.status(200).json({ success: true, message: 'Test added successfully', testCode });
-      }
-    }
-  );
+  
+  
+  connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail], (error1, results1) => {
+  if (error) {
+    console.error('Error adding test:', error);
+  } else {
+    console.log('Test added successfully');
+
+    
+    
+  }
 });
+
+});
+
+
 
 //get the test 
 app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, res) => {
@@ -1391,6 +1397,25 @@ app.put("/updatetest/:testCode", (req, res) => {
     }
   });
 });
+
+
+//presets
+
+//get the test 
+app.get("/gettestpapers/:tupcid", async (req, res) => {
+  const { tupcid } = req.params;
+
+  try {
+    const query = "SELECT * FROM testpapers WHERE TUPCID = ?";
+    const [rows] = await connection.query(query, [tupcid]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching test papers:", error);
+    res.status(500).json({ message: "Failed to fetch test papers" });
+  }
+});
+
 
 
 
