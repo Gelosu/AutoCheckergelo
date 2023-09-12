@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTupcid } from "@/app/provider";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+
 
 export default function FacultyClassTest() {
   const { tupcids } = useTupcid();
@@ -16,7 +16,6 @@ export default function FacultyClassTest() {
   const classname = searchparams.get("classname");
   const subjectname = searchparams.get("subjectname");
   const classcode = searchparams.get("classcode");
-  const router = useRouter();
   const [edittestname, setEdittestname] = useState("");
   const [edittestnumber, setEdittestnumber] = useState("");
 
@@ -27,9 +26,7 @@ export default function FacultyClassTest() {
     return () => clearInterval(interval);
   }, [tupcids]);
 
-  const presetPage = () => {
-    router.push("/Classroom/F/Test/PresetTest");
-  };
+ 
 
   const fetchAndSetTestpapers = async () => {
     try {
@@ -47,36 +44,35 @@ export default function FacultyClassTest() {
     }
   };
 
-  // Adding test
   const addTest = async () => {
     if (testName.trim() !== "") {
       try {
-        // Send a POST request to your backend to add the test
-        const response = await axios.post(
-          "http://localhost:3001/addtestandpreset",
-          {
-            TUPCID: tupcids,
-            class_name: classname,
-            subject_name: subjectname,
-            class_code: classcode,
-            test_name: testName,
-            test_number: testNumber,
-            thumbnail: 0,
-          }
-        );
-
-        // Assuming your backend returns a success message
-        if (response.data.success) {
+        const response = await axios.post("http://localhost:3001/addtestandpreset", {
+          TUPCID: tupcids,
+          class_name: classname,
+          subject_name: subjectname,
+          class_code: classcode,
+          test_name: testName,
+          test_number: testNumber,
+          thumbnail: 0,
+        });
+  
+        if (response.status === 200 && response.data.success) {
           fetchTest();
           setTestName("");
           setTestNumber("");
+        } else {
+          console.error("Error adding test and preset:", response.data.error);
         }
       } catch (error) {
-        console.error("Error adding test:", error);
+        console.error("Error adding test and preset:", error);
       }
     }
   };
-
+  
+  
+  
+  
   // Delete
   const deleteTest = async (testCode) => {
     try {
@@ -161,13 +157,21 @@ export default function FacultyClassTest() {
             <img className="pb-1" src="/add.svg" height={25} width={20} />
             <span>ADD</span>
           </button>
-          <button
-            type="button"
-            className="btn btn-outline-dark pe-3"
-            onClick={presetPage}
-          >
+          <Link
+          href={{
+            pathname: "/Classroom/F/Test/PresetTest",
+            query: {
+              classname: classname,
+              classcode: classcode,
+              subjectname: subjectname,
+            },
+          }}
+        >
+          <button className="btn btn-outline-dark pe-3">
             PRESET
           </button>
+        </Link>
+        
         </div>
         {/* Add MODAL */}
         <div
@@ -231,14 +235,27 @@ export default function FacultyClassTest() {
               className="row py-sm-3 py-5 border border-dark rounded"
               key={test.uid}
             >
-              <a
-                href="/Test/TestPaper"
-                className="link-dark text-decoration-none col-11 align-self-center"
-              >
-                <p className="text-center m-0">
-                  {test.test_number}: {test.test_name}
-                </p>
-              </a>
+             <Link
+              
+              href={{
+                pathname: "/Test/TestPaper",
+                query: {
+                  testnumber: test.test_number,
+                  testname: test.test_name,
+                  uid: test.uid,
+                  classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+                  
+                },
+              }}
+className="link-dark text-decoration-none col-11 align-self-center"
+            >
+              <p className="text-center m-0">
+                 {test.test_number}: {test.test_name}
+              </p>
+            </Link>
+              
               <div className="col-1 text-end align-self-center p-0 pe-2">
                 <img
                   src="/three-dots.svg"
