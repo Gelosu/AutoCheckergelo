@@ -916,12 +916,13 @@ app.get("/studinfo/:TUPCID", async (req, res) => {
 
   try {
     const query =
-      "SELECT FIRSTNAME, SURNAME, COURSE, YEAR, GSFEACC FROM student_accounts WHERE TUPCID = ?";
+      "SELECT FIRSTNAME, SURNAME, COURSE, YEAR FROM student_accounts WHERE TUPCID = ?";
     const [all] = await connection.query(query, [TUPCID]);
 
     if (all.length > 0) {
-      const { FIRSTNAME, SURNAME, COURSE, YEAR, GSFEACC } = all[0];
-      return res.status(202).send({ FIRSTNAME, SURNAME, COURSE, YEAR,GSFEACC });
+      const { FIRSTNAME, SURNAME, COURSE, YEAR } = all[0];
+      console.log(FIRSTNAME, SURNAME, COURSE, YEAR);
+      return res.status(202).send({ FIRSTNAME, SURNAME, COURSE, YEAR });
     } else {
       return res.status(404).send({ message: "Code not found" });
     }
@@ -1000,12 +1001,12 @@ app.get("/facultyinfo/:TUPCID", async (req, res) => {
 
   try {
     const query =
-      "SELECT FIRSTNAME, SURNAME, SUBJECTDEPT, GSFEACC FROM faculty_accounts WHERE TUPCID = ?";
+      "SELECT FIRSTNAME, SURNAME, SUBJECTDEPT FROM faculty_accounts WHERE TUPCID = ?";
     const [all] = await connection.query(query, [TUPCID]);
 
     if (all.length > 0) {
-      const { FIRSTNAME, SURNAME, SUBJECTDEPT, GSFEACC} = all[0];
-      return res.status(202).send({ FIRSTNAME, SURNAME, SUBJECTDEPT, GSFEACC });
+      const { FIRSTNAME, SURNAME, SUBJECTDEPT } = all[0];
+      return res.status(202).send({ FIRSTNAME, SURNAME, SUBJECTDEPT });
     } else {
       return res.status(404).send({ message: "Code not found" });
     }
@@ -1411,7 +1412,7 @@ app.get("/getpresets/:tupcid", async (req, res) => {
   const { tupcid } = req.params;
 
   try {
-    const query = "SELECT * FROM testpapers WHERE TUPCID = ?";
+    const query = "SELECT * FROM presets WHERE TUPCID = ? UNION SELECT * FROM testpapers WHERE TUPCID = ?";
     const [rows] = await connection.query(query, [tupcid, tupcid]);
 
     res.status(200).json(rows);
@@ -1599,6 +1600,51 @@ app.post('/sendToRecipient', async (req, res) => {
   } catch (error) {
     console.error('Error adding preset to the test:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+//add test ready to print
+app.post('/createtest', async (req, res) => {
+  try {
+    // Access data from the request body
+    const {
+      TUPCID,
+      test_number,
+      test_name,
+      class_name,
+      class_code,
+      subject_name,
+      uid,
+      data, // An array of objects representing questions
+    } = req.body;
+    console.log('Check receiving data....', TUPCID);
+
+    // Insert data into the database
+    const query = `
+      INSERT INTO testforstudents 
+      (TUPCID, test_number, test_name, class_name, class_code, subject_name, uid, questions, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      TUPCID,
+      test_number,
+      test_name,
+      class_name,
+      class_code,
+      subject_name,
+      uid,
+      JSON.stringify(data), // Convert the array of question objects to JSON string
+    ];
+
+    await connection.query(query, values);
+
+    // Respond with a success message
+    res.status(200).json({ message: 'Data added to the test successfully' });
+  } catch (error) {
+    console.error('Error adding data to the test:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
 
