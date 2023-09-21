@@ -1,10 +1,25 @@
-"use client"
+"use client";
+import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 export default function ReportProblem() {
   const SearchParams = useSearchParams();
-  const gsfeAcc = SearchParams.get("gmail")
+  const gsfeAcc = SearchParams.get("gmail");
+  const [messages, setMessage] = useState("");
+  const sendEmail = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/sendEmail/${gsfeAcc}/${messages}`
+      );
+      if (response.status === 200) {
+        alert("Thank you, your opinion will ewan");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <div className="d-flex justify-content-start align-items-center">
@@ -27,6 +42,9 @@ export default function ReportProblem() {
               />
               <textarea
                 type="text"
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                }}
                 placeholder="Message"
                 className="form-control border border-dark rounded-3 mt-1 mb-2 pb-5"
               />
@@ -36,8 +54,9 @@ export default function ReportProblem() {
             <button
               type="button"
               className="btn btn-outline-dark rounded-3 mt-2 mb-3 studrepmx"
+              onClick={sendEmail}
             >
-              <h5 className="mb-0">SAVE</h5>
+              <h5 className="mb-0">SEND</h5>
             </button>
           </div>
         </div>

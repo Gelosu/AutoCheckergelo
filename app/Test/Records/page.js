@@ -6,7 +6,7 @@ export default function RecordsPage(){
         <main className="container-fluid">
         <div className="row ">
           <FacultyAside/>
-          <div className="custom-m col-12 col-sm-11 col-md-10 p-0 vh-100">
+          <div className="custom-m col-11 col-md-10 p-0">
             <Records/>
           </div>
         </div>

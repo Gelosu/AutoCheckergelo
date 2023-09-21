@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Select from "react-select";
 import { useTupcid } from "@/app/provider";
 import axios from "axios";
+
 
 export default function TestPaper() {
   const { tupcids } = useTupcid();
@@ -19,19 +21,24 @@ export default function TestPaper() {
   const [savedValues, setSavedValues] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
+
+  // Load data from localStorage when the component mounts
+
+
   const questionTypes = [
     { value: "MultipleChoice", label: "Multiple Choice" },
     { value: "TrueFalse", label: "True/False" },
     { value: "Identification", label: "Identification" },
   ];
 
+
   const QA = ({ setSavedValues }) => {
     const [fields, setFields] = useState([
       {
-        questionType: null,
+        questionType: questionTypes[0],
         question: "",
         answer: "",
-        score: "",
+        score: "1",
         copiedFields: [],
         MCOptions: [
           { label: "A", text: "" },
@@ -43,18 +50,49 @@ export default function TestPaper() {
       },
     ]);
 
-    const [fieldTitleNumbers, setFieldTitleNumbers] = useState([1]);
 
-    const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState([1]);
+    const localStorageKey = `testPaperData_${tupcids}_${classcode}_${uid}`;
+   
+
+    useEffect(() => {
+      const savedData = localStorage.getItem(localStorageKey);
+      if (savedData) {
+        setFields(JSON.parse(savedData));
+      }
+    }, []);
+
+      
+
+      const [fieldTitleNumbers, setFieldTitleNumbers] = useState([1]);
+      const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState([1]);
+  
 
     const addNewField = () => {
-      setFields([
-        ...fields,
+
+
+      if (fieldTitleNumbers.length >= 3) {
+        return;
+      }
+ 
+      let newQuestionType = questionTypes[1]; // Default to True/False
+      const hasMultipleChoice = fields.some((field) => field.questionType?.value === "MultipleChoice");
+      const hasTrueFalse = fields.some((field) => field.questionType?.value === "TrueFalse");
+      if (!hasMultipleChoice) {
+        newQuestionType = questionTypes[0];
+      } else if (!hasTrueFalse) {
+        newQuestionType = questionTypes[1];
+      } else {
+        newQuestionType = questionTypes[2];
+      }
+   
+      const newFieldNumber = fieldTitleNumbers.length + 1;
+      setFields((prevFields) => [
+        ...prevFields,
         {
-          questionType: null,
+          questionType: newQuestionType,
           question: "",
           answer: "",
-          score: "",
+          score: "1",
           copiedFields: [],
           MCOptions: [
             { label: "A", text: "" },
@@ -65,20 +103,27 @@ export default function TestPaper() {
           TFOptions: [{ label: "TRUE" }, { label: "FALSE" }],
         },
       ]);
-      setFieldTitleNumbers([
-        ...fieldTitleNumbers,
-        fieldTitleNumbers.length + 1,
-      ]);
-      setFieldQuestionNumbers([...fieldQuestionNumbers, 1]);
+      setFieldTitleNumbers((prevNumbers) => [...prevNumbers, newFieldNumber]);
+      setFieldQuestionNumbers((prevNumbers) => [...prevNumbers, 1]);
+    };
+   
+    const getExistingQuestionTypes = (currentFieldIndex) => {
+      const existingTypes = new Set();
+ 
+      fields.forEach((field, index) => {
+        if (index !== currentFieldIndex && field.questionType) {
+          existingTypes.add(field.questionType.value);
+        }
+      });
+ 
+      return existingTypes;
     };
 
-    const alphabeticalOptions = Array.from({ length: 26 }, (_, index) =>
-      String.fromCharCode(65 + index)
-    );
 
     const handleFieldChange = (index, field) => {
       const updatedFields = [...fields];
       updatedFields[index] = field;
+
 
       if (field.questionType && field.questionType.value === "TrueFalse") {
         updatedFields[index].answer = field.answer;
@@ -87,25 +132,118 @@ export default function TestPaper() {
         field.questionType.value === "MultipleChoice"
       ) {
         updatedFields[index].answer = field.answer;
+
+
+        // Update the answer for each option
+        updatedFields[index].MCOptions.forEach((option, optionIndex) => {
+          if (option.label === field.answer) {
+            option.text = field.MCOptions[optionIndex].text;
+          }
+        });
       } else {
         updatedFields[index].answer = field.answer;
       }
       setFields(updatedFields);
     };
 
-    const addRadioOption = (index) => {
+
+    const addRadioOption = (index, copiedIndex) => {
       const updatedFields = [...fields];
-      if (!updatedFields[index].MCOptions) {
-        updatedFields[index].MCOptions = [];
+      if (copiedIndex === undefined) {
+        if (!updatedFields[index].MCOptions) {
+          updatedFields[index].MCOptions = [];
+        }
+        if (updatedFields[index].MCOptions.length < 26) {
+          const newOption = String.fromCharCode(
+            65 + updatedFields[index].MCOptions.length
+          );
+          updatedFields[index].MCOptions.push({ label: newOption, text: "" });
+          setFields(updatedFields);
+        }
+      } else {
+        if (!updatedFields[index].copiedFields[copiedIndex].MCOptions) {
+          updatedFields[index].copiedFields[copiedIndex].MCOptions = [];
+        }
+        if (
+          updatedFields[index].copiedFields[copiedIndex].MCOptions.length < 26
+        ) {
+          const newOption = String.fromCharCode(
+            65 + updatedFields[index].copiedFields[copiedIndex].MCOptions.length
+          );
+          updatedFields[index].copiedFields[copiedIndex].MCOptions.push({
+            label: newOption,
+            text: "",
+          });
+          setFields(updatedFields);
+        }
       }
-      if (updatedFields[index].MCOptions.length < 26) {
-        const newOption = String.fromCharCode(
-          65 + updatedFields[index].MCOptions.length
-        );
-        updatedFields[index].MCOptions.push({ label: newOption, text: "" });
+    };
+
+
+    const subtractRadioOption = (index, copiedIndex) => {
+      const updatedFields = [...fields];
+
+
+      if (copiedIndex === undefined) {
+        // Subtract an option from the original field
+        if (updatedFields[index].MCOptions.length > 4) {
+          updatedFields[index].MCOptions.pop();
+        } else {
+          console.error(
+            "Cannot subtract option. Minimum of 4 options required."
+          );
+        }
+      } else if (
+        updatedFields[index].copiedFields &&
+        updatedFields[index].copiedFields[copiedIndex].MCOptions
+      ) {
+        // Subtract an option from a copied field
+        if (
+          updatedFields[index].copiedFields[copiedIndex].MCOptions.length > 4
+        ) {
+          updatedFields[index].copiedFields[copiedIndex].MCOptions.pop();
+        } else {
+          console.error(
+            "Cannot subtract option. Minimum of 4 options required."
+          );
+        }
+      }
+
+
+      setFields(updatedFields);
+    };
+
+
+    const handleOptionTextChange = (index, optionIndex, text) => {
+      const updatedFields = [...fields];
+      if (
+        updatedFields[index].MCOptions &&
+        updatedFields[index].MCOptions[optionIndex]
+      ) {
+        updatedFields[index].MCOptions[optionIndex].text = text;
         setFields(updatedFields);
       }
     };
+
+
+    const handleOptionTextChangeForCopiedField = (
+      index,
+      copiedIndex,
+      optionIndex,
+      text
+    ) => {
+      const updatedFields = [...fields];
+      if (
+        updatedFields[index].copiedFields[copiedIndex].MCOptions &&
+        updatedFields[index].copiedFields[copiedIndex].MCOptions[optionIndex]
+      ) {
+        updatedFields[index].copiedFields[copiedIndex].MCOptions[
+          optionIndex
+        ].text = text;
+        setFields(updatedFields);
+      }
+    };
+
 
     const handleCopyField = (index, copiedIndex) => {
       const copiedField = { ...fields[index].copiedFields[copiedIndex] };
@@ -116,9 +254,71 @@ export default function TestPaper() {
       updatedFields[index].copiedFields[copiedIndex] = {
         ...fields[index].copiedFields[copiedIndex],
         copiedFields: [...(copiedField.copiedFields || [])],
+        MCOptions: [
+          { label: "A", text: "" },
+          { label: "B", text: "" },
+          { label: "C", text: "" },
+          { label: "D", text: "" },
+        ], // Initialize MCOptions with default values
       };
+
+
+      if (
+        fields[index].questionType &&
+        fields[index].questionType.value === "MultipleChoice"
+      ) {
+        updatedFields[index].copiedFields[copiedIndex].answer =
+          copiedField.answer;
+      }
+
+
       setFields(updatedFields);
     };
+
+
+    const handleCopyFieldData = (index, copiedIndex) => {
+      const updatedFields = [...fields];
+
+
+      if (!updatedFields[index].copiedFields) {
+        updatedFields[index].copiedFields = [];
+      }
+
+
+      if (copiedIndex === undefined) {
+        const sourceQuestion = updatedFields[index]; // Get the source question
+        const copiedData = {
+          questionType: sourceQuestion.questionType,
+          question: sourceQuestion.question,
+          answer: sourceQuestion.answer,
+          score: sourceQuestion.score,
+          MCOptions: [...sourceQuestion.MCOptions],
+          TFOptions: [...sourceQuestion.TFOptions],
+        };
+
+
+        updatedFields[index].copiedFields.splice(index, 0, copiedData);
+      } else {
+        const sourceQuestion = updatedFields[index].copiedFields[copiedIndex]; // Get the source question
+        const copiedData = {
+          questionType: sourceQuestion.questionType,
+          question: sourceQuestion.question,
+          answer: sourceQuestion.answer,
+          score: sourceQuestion.score,
+          MCOptions: [...sourceQuestion.MCOptions],
+          TFOptions: [...sourceQuestion.TFOptions],
+        };
+        updatedFields[index].copiedFields.splice(
+          copiedIndex + 1,
+          0,
+          copiedData
+        );
+      }
+
+
+      setFields(updatedFields);
+    };
+
 
     const handleReset = (index, copiedIndex) => {
       const updatedFields = [...fields];
@@ -127,18 +327,27 @@ export default function TestPaper() {
           ...fields[index],
           question: "",
           answer: "",
-          score: "",
+          MCOptions: fields[index].MCOptions.map((option) => ({
+            ...option,
+            text: "", // Reset text for MultipleChoice options
+          })),
         };
       } else {
         updatedFields[index].copiedFields[copiedIndex] = {
           ...fields[index].copiedFields[copiedIndex],
           question: "",
           answer: "",
-          score: "",
+          MCOptions: fields[index].copiedFields[copiedIndex].MCOptions.map(
+            (option) => ({
+              ...option,
+              text: "", // Reset text for MultipleChoice options
+            })
+          ),
         };
       }
       setFields(updatedFields);
     };
+
 
     const handleRemoveCopiedField = (fieldIndex, copiedIndex) => {
       const updatedFields = [...fields];
@@ -146,56 +355,151 @@ export default function TestPaper() {
       setFields(updatedFields);
     };
 
+
+    const handleRemoveField = (index) => {
+      const updatedFields = [...fields];
+      updatedFields.splice(index, 1);
+
+
+      // Update the TYPE numbers for the remaining fields
+      const updatedFieldTitleNumbers = updatedFields.map(
+        (field, i) => fieldTitleNumbers[i]
+      );
+      const updatedFieldQuestionNumbers = updatedFields.map(
+        (field, i) => fieldQuestionNumbers[i]
+      );
+
+
+      setFields(updatedFields);
+      setFieldTitleNumbers(updatedFieldTitleNumbers);
+      setFieldQuestionNumbers(updatedFieldQuestionNumbers);
+    };
+
+
     const handleQuestionTypeChange = (index, selectedOption) => {
       const updatedFields = [...fields];
       updatedFields[index] = {
-        ...fields[index],
         questionType: selectedOption,
         question: "",
         answer: "",
-        copiedFields: fields[index].copiedFields.map(() => ({
-          question: "",
-          answer: "",
-        })),
+        score: "1",
+        copiedFields: [],
+        MCOptions: [
+          { label: "A", text: "" },
+          { label: "B", text: "" },
+          { label: "C", text: "" },
+          { label: "D", text: "" },
+        ],
+        TFOptions: [{ label: "TRUE" }, { label: "FALSE" }],
       };
       setFields(updatedFields);
     };
 
-    // Modify the handleSave function in your frontend code
+
     const handleSave = async () => {
       const savedData = [];
+      const typeScores = {};
+      localStorage.setItem("testPaperData", JSON.stringify(fields));
+
+
+      const updatedSavedValues = [];
+
 
       fields.forEach((field, index) => {
+        const question = field.question ? field.question.trim() : "";
+        const questionWithQuestionMark = question.endsWith("?")
+          ? question
+          : question + "?";
+
+
         const questionData = {
-          question_type: field.questionType ? field.questionType.value : null,
-          question_number: fieldQuestionNumbers[index],
-          question: field.question ? field.question.toUpperCase() : "",
+          type: `TYPE ${fieldTitleNumbers[index]}`,
+          score: Math.round(parseFloat(field.score) || 0),
+          questionType: field.questionType ? field.questionType.value : null,
+          questionNumber: fieldQuestionNumbers[index],
+          question: questionWithQuestionMark.toUpperCase(),
           answer: field.answer ? field.answer.toUpperCase() : "",
-          total_score: Math.round(parseFloat(field.score) || 0),
         };
 
-        savedData.push(questionData);
+
+        if (
+          field.questionType &&
+          field.questionType.value === "MultipleChoice"
+        ) {
+          questionData.options = field.MCOptions.map((option) => ({
+            label: option.label,
+            text: option.text ? option.text.toUpperCase() : "",
+          }));
+        }
+
+
+        updatedSavedValues.push(questionData);
+
 
         if (field.copiedFields.length > 0) {
           field.copiedFields.forEach((copiedField, copiedIndex) => {
+            const question = copiedField.question
+              ? copiedField.question.trim()
+              : "";
+            const questionWithQuestionMark = question.endsWith("?")
+              ? question
+              : question + "?";
+
+
             const copiedQuestionData = {
-              question_type: field.questionType
+              type: `TYPE ${fieldTitleNumbers[index]}`,
+              score: Math.round(parseFloat(field.score) || 0),
+              questionType: field.questionType
                 ? field.questionType.value
                 : null,
-              question_number: fieldQuestionNumbers[index] + copiedIndex + 1,
-              question: copiedField.question
-                ? copiedField.question.toUpperCase()
-                : "",
+              questionNumber: fieldQuestionNumbers[index] + copiedIndex + 1,
+              question: questionWithQuestionMark.toUpperCase(),
               answer: copiedField.answer
                 ? copiedField.answer.toUpperCase()
                 : "",
-              total_score: Math.round(parseFloat(copiedField.score) || 0), // Use copiedField.score here
             };
 
-            savedData.push(copiedQuestionData);
+
+            if (
+              field.questionType &&
+              field.questionType.value === "MultipleChoice"
+            ) {
+              // Save all radio button options and their text for copied fields
+              copiedQuestionData.options = copiedField.MCOptions.map(
+                (option) => ({
+                  label: option.label,
+                  text: option.text ? option.text.toUpperCase() : "",
+                })
+              );
+            }
+
+
+            updatedSavedValues.push(copiedQuestionData);
           });
         }
       });
+
+
+      savedData.forEach((data) => {
+        const type = data.type;
+        if (typeScores[type]) {
+          typeScores[type] += data.score;
+        } else {
+          typeScores[type] = data.score;
+        }
+      });
+
+
+      const totalScore = savedData.reduce(
+        (total, data) => total + data.score,
+        0
+      );
+      typeScores["Total Score"] = totalScore;
+      savedData.push(typeScores);
+
+
+      setSavedValues(updatedSavedValues);
+
 
       try {
         const response = await axios.post("http://localhost:3001/createtest", {
@@ -209,18 +513,20 @@ export default function TestPaper() {
           data: savedData,
         });
 
+
         if (response.status === 200) {
           setErrorMessage("Data saved successfully.");
+          localStorage.setItem(localStorageKey, JSON.stringify(fields));
           console.log("response...", response.data);
         } else {
           setErrorMessage("Error saving data. Please try again.");
         }
       } catch (error) {
-        a;
         console.error("Error saving data:", error);
         setErrorMessage("Error saving data. Please try again.");
       }
     };
+
 
     return (
       <div className="d-flex flex-column justify-content-center align-items-center container-sm col-lg-8 col-11 border border-dark rounded py-2">
@@ -234,18 +540,22 @@ export default function TestPaper() {
               <span className="col-2 p-0 ">TYPE OF TEST:</span>
               <Select
                 className="col-8"
-                options={questionTypes}
+                options={questionTypes.filter(
+                  (option) =>
+                    !getExistingQuestionTypes(index).has(option.value)
+                )}
                 value={field.questionType}
                 onChange={(selectedOption) =>
                   handleQuestionTypeChange(index, selectedOption)
                 }
                 placeholder="Select Question Type"
               />
+
+
               <input
-                className="col-2 border border-dark rounded py-1"
+                className="col-2 py-1 rounded border border-dark"
                 type="number"
                 placeholder="Score per question"
-                min="0"
                 value={field.score}
                 onChange={(e) =>
                   handleFieldChange(index, { ...field, score: e.target.value })
@@ -253,45 +563,26 @@ export default function TestPaper() {
               />
             </div>
 
+
             <div className="col-12 p-0">
-              QUESTION NO. {fieldQuestionNumbers[index]}
+              <div>QUESTION NO. {fieldQuestionNumbers[index]}</div>
             </div>
-            <div className="row p-0 mb-1">
-              <input
-                className="col-10 border border-dark rounded py-1 px-3"
-                type="text"
-                placeholder="Question"
-                value={field.question}
-                onChange={(e) =>
-                  handleFieldChange(index, {
-                    ...field,
-                    question: e.target.value,
-                  })
-                }
-              />
-              {index ===
-                fieldTitleNumbers.indexOf(fieldTitleNumbers[index]) && (
-                <button
-                  className="col-1 border border-dark rounded p-0"
-                  onClick={() =>
-                    handleCopyField(index, field.copiedFields.length)
-                  }
-                >
-                  <img src="/add.svg" alt="add" height={20} width={20} />
-                </button>
-              )}
-              <button
-                className="border border-dark rounded col-1"
-                onClick={() => handleReset(index)}
-              >
-                <img src="/reset.svg" alt="reset" height={20} width={20} className="pb-1"/>
-              </button>
-            </div>
+            <div className="row p-0 mb-1"></div>
+            <input
+              className="col-12 border border-dark rounded py-1 px-3 mb-1"
+              type="text"
+              placeholder="Question"
+              value={field.question}
+              onChange={(e) =>
+                handleFieldChange(index, { ...field, question: e.target.value })
+              }
+            />
+
 
             {field.questionType && field.questionType.value === "TrueFalse" ? (
               <div className="p-0">
                 {field.TFOptions.map((option, optionIndex) => (
-                  <div key={optionIndex} >
+                  <div key={optionIndex}>
                     <label>
                       <input
                         type="radio"
@@ -311,7 +602,7 @@ export default function TestPaper() {
               </div>
             ) : field.questionType &&
               field.questionType.value === "MultipleChoice" ? (
-              <div className="p-0">
+              <div>
                 {field.MCOptions.map((option, optionIndex) => (
                   <div key={optionIndex} className="mb-1">
                     <label className="col-1">
@@ -333,42 +624,78 @@ export default function TestPaper() {
                       type="text"
                       placeholder="Enter text"
                       value={option.text}
-                      onChange={(e) => {
-                        const updatedFields = [...fields];
-                        updatedFields[index].MCOptions[optionIndex].text =
-                          e.target.value;
-                        setFields(updatedFields);
-                      }}
+                      onChange={(e) =>
+                        handleOptionTextChange(
+                          index,
+                          optionIndex,
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
                 ))}
-                <button onClick={() => addRadioOption(index)} className="border border-dark rounded py-1 px-3">
-                  Add Option
+                <button
+                  onClick={() => addRadioOption(index)}
+                  className="border border-dark rounded py-1 px-3"
+                >
+                  + Option
+                </button>
+                <button
+                  onClick={() => subtractRadioOption(index)}
+                  className="border border-dark rounded py-1 px-3"
+                >
+                  - Option
                 </button>
               </div>
             ) : (
-              <input
-                className="border border-dark rounded mb-1 py-1 px-3"
-                type="text"
-                placeholder="Answer"
-                value={field.answer}
-                onChange={(e) =>
-                  handleFieldChange(index, {
-                    ...field,
-                    answer: e.target.value,
-                  })
-                }
-              />
+              <div className="p-0">
+                <input
+                  className="col-12 border border-dark rounded mb-1 py-1 px-3"
+                  type="text"
+                  placeholder="Answer"
+                  value={field.answer}
+                  onChange={(e) =>
+                    handleFieldChange(index, {
+                      ...field,
+                      answer: e.target.value,
+                    })
+                  }
+                />
+              </div>
             )}
+            <button
+              className="border border-dark rounded col-1"
+              onClick={() => handleReset(index)}
+            >
+              <img
+                src="/reset.svg"
+                alt="reset"
+                height={20}
+                width={20}
+                className="pb-1"
+              />
+            </button>
+            <br />
+            <button onClick={() => handleCopyFieldData(index)}>Copy</button>
+
+
+            {/* for copyfield as sub field */}
+
 
             {field.copiedFields.length > 0 && (
               <div className="p-0 row justify-content-center">
                 {field.copiedFields.map((copiedField, copiedIndex) => (
-                  <div className="p-0 col-12" key={copiedIndex} style={{ marginBottom: "10px" }}>
+                  <div
+                    className="p-0 col-12"
+                    key={copiedIndex}
+                    style={{ marginBottom: "10px" }}
+                  >
                     <div>
                       QUESTION NO.{" "}
                       {fieldQuestionNumbers[index] + copiedIndex + 1}
                     </div>
+
+
                     <div className="p-0 mb-1">
                       <input
                         className="col-10 border border-dark rounded px-3 py-1"
@@ -386,21 +713,8 @@ export default function TestPaper() {
                           })
                         }
                       />
-                      <button
-                      className="col-1 border border-dark rounded py-1"
-                        onClick={() =>
-                          handleRemoveCopiedField(index, copiedIndex)
-                        }
-                      >
-                        <span className="p-2">-</span>
-                      </button>
-                      <button
-                        className="col-1 border border-dark rounded py-1"
-                        onClick={() => handleReset(index, copiedIndex)}
-                      >
-                        <img src="/reset.svg" alt="reset" height={20} width={20} className="pb-1"/>
-                      </button>
                     </div>
+
 
                     {field.questionType &&
                     field.questionType.value === "TrueFalse" ? (
@@ -432,7 +746,7 @@ export default function TestPaper() {
                     ) : field.questionType &&
                       field.questionType.value === "MultipleChoice" ? (
                       <div>
-                        {field.MCOptions.map((option, optionIndex) => (
+                        {copiedField.MCOptions.map((option, optionIndex) => (
                           <div key={optionIndex}>
                             <label>
                               <input
@@ -457,61 +771,112 @@ export default function TestPaper() {
                               type="text"
                               placeholder="Enter text"
                               value={option.text}
-                              onChange={(e) => {
-                                const updatedFields = [...fields];
-                                updatedFields[index].copiedFields[
-                                  copiedIndex
-                                ].MCOptions[optionIndex].text = e.target.value;
-                                setFields(updatedFields);
-                              }}
+                              onChange={(e) =>
+                                handleOptionTextChangeForCopiedField(
+                                  index,
+                                  copiedIndex,
+                                  optionIndex,
+                                  e.target.value
+                                )
+                              }
                             />
                           </div>
                         ))}
-                        <button onClick={() => addRadioOption(index)}>
-                          Add Radio Option
+                        <button
+                          onClick={() => addRadioOption(index, copiedIndex)}
+                        >
+                          + Option
+                        </button>
+                        <button
+                          onClick={() =>
+                            subtractRadioOption(index, copiedIndex)
+                          }
+                        >
+                          - Option
                         </button>
                       </div>
                     ) : (
-                      <input
-                      className="border border-dark rounded col-12 px-3 py-1"
-                        type="text"
-                        placeholder="Answer"
-                        value={copiedField.answer}
-                        onChange={(e) =>
-                          handleFieldChange(index, {
-                            ...field,
-                            copiedFields: field.copiedFields.map((cf, cIndex) =>
-                              cIndex === copiedIndex
-                                ? { ...cf, answer: e.target.value }
-                                : cf
-                            ),
-                          })
-                        }
-                      />
+                      <div>
+                        <input
+                          className="border border-dark rounded col-12 px-3 py-1"
+                          type="text"
+                          placeholder="Answer"
+                          value={copiedField.answer}
+                          onChange={(e) =>
+                            handleFieldChange(index, {
+                              ...field,
+                              copiedFields: field.copiedFields.map(
+                                (cf, cIndex) =>
+                                  cIndex === copiedIndex
+                                    ? { ...cf, answer: e.target.value }
+                                    : cf
+                              ),
+                            })
+                          }
+                        />
+                      </div>
                     )}
+
+
+                    <button
+                      className="col-1 border border-dark rounded py-1"
+                      onClick={() => handleReset(index, copiedIndex)}
+                    >
+                      <img
+                        src="/reset.svg"
+                        alt="reset"
+                        height={20}
+                        width={20}
+                        className="pb-1"
+                      />
+                    </button>
+                    <br />
+                    <button
+                      className="col-1 border border-dark rounded py-1"
+                      onClick={() =>
+                        handleRemoveCopiedField(index, copiedIndex)
+                      }
+                    >
+                      <span className="p-2">-</span>
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => handleCopyFieldData(index, copiedIndex)}
+                    >
+                      Copy
+                    </button>
+                    <br />
                   </div>
                 ))}
               </div>
             )}
+            <div>
+              <br />
+              <button
+                onClick={() =>
+                  handleCopyField(index, field.copiedFields.length)
+                }
+              >
+                Copy Empty Field
+              </button>
+              <br />
+
+
+              <button onClick={() => handleRemoveField(index)}>
+                Remove Field
+              </button>
+            </div>
           </fieldset>
         ))}
-        <div className="d-flex gap-2">
-          <button
-            className="border border-dark rounded p-1"
-            onClick={addNewField}
-          >
-            Add New Field
-          </button>
-          <button
-            className="border border-dark rounded p-1"
-            onClick={handleSave}
-          >
-            Save All
-          </button>
-        </div>
+
+
+        <button onClick={addNewField}>Add New Field</button>
+        <br />
+        <button onClick={handleSave}>Save All</button>
       </div>
     );
   };
+
 
   return (
     <main className="container-fluid p-sm-4 py-3 h-100">
@@ -555,3 +920,7 @@ export default function TestPaper() {
     </main>
   );
 }
+
+
+
+

@@ -262,7 +262,7 @@ export default function AdminPage() {
 
   const filterData = (data, query) => {
     return data.filter((item) => {
-      const fullName = `${item.SURNAME} ${item.FIRSTNAME}`.toLowerCase();
+      const fullName = `${item.FIRSTNAME}`.toLowerCase();
       return fullName.includes(query.toLowerCase());
     });
   };

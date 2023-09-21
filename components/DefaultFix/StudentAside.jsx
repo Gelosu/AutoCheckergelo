@@ -11,6 +11,7 @@ export default function StudentAside() {
   const [COURSE, setCOURSE] = useState("");
   const [YEAR, setYEAR] = useState("");
   const [navs, setNavs] = useState(false);
+  const [gsfeAcc, setGsfeacc] = useState("");
 
   useEffect(() => {
     const fetchStudentInfo = async () => {
@@ -18,11 +19,12 @@ export default function StudentAside() {
         const response = await axios.get(
           `http://localhost:3001/studinfo/${tupcids}`
         );
-        const { FIRSTNAME, SURNAME, COURSE, YEAR } = response.data;
+        const { FIRSTNAME, SURNAME, COURSE, YEAR, GSFEACC } = response.data;
         setFIRSTNAME(FIRSTNAME);
         setSURNAME(SURNAME);
         setCOURSE(COURSE);
         setYEAR(YEAR);
+        setGsfeacc(GSFEACC)
       } catch (error) {
         console.log("Error fetching student data:", error);
       }
@@ -76,7 +78,7 @@ export default function StudentAside() {
             >
               <p className="my-2">SETTINGS</p>
             </Link>
-            <Link href={{pathname:"/Classroom/S/ReportProblem", query:{}}}
+            <Link href={{pathname:"/Classroom/S/ReportProblem", query:{gmail:gsfeAcc}}}
             className="text-decoration-none link-light"
             >
               <p className="my-2">REPORT PROBLEM</p>
