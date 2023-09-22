@@ -1,13 +1,11 @@
 "use client";
 
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Select from "react-select";
 import { useTupcid } from "@/app/provider";
 import axios from "axios";
-
 
 export default function TestPaper() {
   const { tupcids } = useTupcid();
@@ -21,16 +19,13 @@ export default function TestPaper() {
   const [savedValues, setSavedValues] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
-
   // Load data from localStorage when the component mounts
-
 
   const questionTypes = [
     { value: "MultipleChoice", label: "Multiple Choice" },
     { value: "TrueFalse", label: "True/False" },
     { value: "Identification", label: "Identification" },
   ];
-
 
   const QA = ({ setSavedValues }) => {
     const [fields, setFields] = useState([
@@ -50,9 +45,7 @@ export default function TestPaper() {
       },
     ]);
 
-
     const localStorageKey = `testPaperData_${tupcids}_${classcode}_${uid}`;
-   
 
     useEffect(() => {
       const savedData = localStorage.getItem(localStorageKey);
@@ -61,22 +54,21 @@ export default function TestPaper() {
       }
     }, []);
 
-      
-
-      const [fieldTitleNumbers, setFieldTitleNumbers] = useState([1]);
-      const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState([1]);
-  
+    const [fieldTitleNumbers, setFieldTitleNumbers] = useState([1]);
+    const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState([1]);
 
     const addNewField = () => {
-
-
       if (fieldTitleNumbers.length >= 3) {
         return;
       }
- 
+
       let newQuestionType = questionTypes[1]; // Default to True/False
-      const hasMultipleChoice = fields.some((field) => field.questionType?.value === "MultipleChoice");
-      const hasTrueFalse = fields.some((field) => field.questionType?.value === "TrueFalse");
+      const hasMultipleChoice = fields.some(
+        (field) => field.questionType?.value === "MultipleChoice"
+      );
+      const hasTrueFalse = fields.some(
+        (field) => field.questionType?.value === "TrueFalse"
+      );
       if (!hasMultipleChoice) {
         newQuestionType = questionTypes[0];
       } else if (!hasTrueFalse) {
@@ -84,7 +76,7 @@ export default function TestPaper() {
       } else {
         newQuestionType = questionTypes[2];
       }
-   
+
       const newFieldNumber = fieldTitleNumbers.length + 1;
       setFields((prevFields) => [
         ...prevFields,
@@ -106,24 +98,22 @@ export default function TestPaper() {
       setFieldTitleNumbers((prevNumbers) => [...prevNumbers, newFieldNumber]);
       setFieldQuestionNumbers((prevNumbers) => [...prevNumbers, 1]);
     };
-   
+
     const getExistingQuestionTypes = (currentFieldIndex) => {
       const existingTypes = new Set();
- 
+
       fields.forEach((field, index) => {
         if (index !== currentFieldIndex && field.questionType) {
           existingTypes.add(field.questionType.value);
         }
       });
- 
+
       return existingTypes;
     };
-
 
     const handleFieldChange = (index, field) => {
       const updatedFields = [...fields];
       updatedFields[index] = field;
-
 
       if (field.questionType && field.questionType.value === "TrueFalse") {
         updatedFields[index].answer = field.answer;
@@ -132,7 +122,6 @@ export default function TestPaper() {
         field.questionType.value === "MultipleChoice"
       ) {
         updatedFields[index].answer = field.answer;
-
 
         // Update the answer for each option
         updatedFields[index].MCOptions.forEach((option, optionIndex) => {
@@ -145,7 +134,6 @@ export default function TestPaper() {
       }
       setFields(updatedFields);
     };
-
 
     const addRadioOption = (index, copiedIndex) => {
       const updatedFields = [...fields];
@@ -179,10 +167,8 @@ export default function TestPaper() {
       }
     };
 
-
     const subtractRadioOption = (index, copiedIndex) => {
       const updatedFields = [...fields];
-
 
       if (copiedIndex === undefined) {
         // Subtract an option from the original field
@@ -209,10 +195,8 @@ export default function TestPaper() {
         }
       }
 
-
       setFields(updatedFields);
     };
-
 
     const handleOptionTextChange = (index, optionIndex, text) => {
       const updatedFields = [...fields];
@@ -224,7 +208,6 @@ export default function TestPaper() {
         setFields(updatedFields);
       }
     };
-
 
     const handleOptionTextChangeForCopiedField = (
       index,
@@ -244,7 +227,6 @@ export default function TestPaper() {
       }
     };
 
-
     const handleCopyField = (index, copiedIndex) => {
       const copiedField = { ...fields[index].copiedFields[copiedIndex] };
       const updatedFields = [...fields];
@@ -262,7 +244,6 @@ export default function TestPaper() {
         ], // Initialize MCOptions with default values
       };
 
-
       if (
         fields[index].questionType &&
         fields[index].questionType.value === "MultipleChoice"
@@ -271,19 +252,15 @@ export default function TestPaper() {
           copiedField.answer;
       }
 
-
       setFields(updatedFields);
     };
-
 
     const handleCopyFieldData = (index, copiedIndex) => {
       const updatedFields = [...fields];
 
-
       if (!updatedFields[index].copiedFields) {
         updatedFields[index].copiedFields = [];
       }
-
 
       if (copiedIndex === undefined) {
         const sourceQuestion = updatedFields[index]; // Get the source question
@@ -295,7 +272,6 @@ export default function TestPaper() {
           MCOptions: [...sourceQuestion.MCOptions],
           TFOptions: [...sourceQuestion.TFOptions],
         };
-
 
         updatedFields[index].copiedFields.splice(index, 0, copiedData);
       } else {
@@ -315,10 +291,8 @@ export default function TestPaper() {
         );
       }
 
-
       setFields(updatedFields);
     };
-
 
     const handleReset = (index, copiedIndex) => {
       const updatedFields = [...fields];
@@ -348,18 +322,15 @@ export default function TestPaper() {
       setFields(updatedFields);
     };
 
-
     const handleRemoveCopiedField = (fieldIndex, copiedIndex) => {
       const updatedFields = [...fields];
       updatedFields[fieldIndex].copiedFields.splice(copiedIndex, 1);
       setFields(updatedFields);
     };
 
-
     const handleRemoveField = (index) => {
       const updatedFields = [...fields];
       updatedFields.splice(index, 1);
-
 
       // Update the TYPE numbers for the remaining fields
       const updatedFieldTitleNumbers = updatedFields.map(
@@ -369,12 +340,10 @@ export default function TestPaper() {
         (field, i) => fieldQuestionNumbers[i]
       );
 
-
       setFields(updatedFields);
       setFieldTitleNumbers(updatedFieldTitleNumbers);
       setFieldQuestionNumbers(updatedFieldQuestionNumbers);
     };
-
 
     const handleQuestionTypeChange = (index, selectedOption) => {
       const updatedFields = [...fields];
@@ -395,22 +364,18 @@ export default function TestPaper() {
       setFields(updatedFields);
     };
 
-
     const handleSave = async () => {
       const savedData = [];
       const typeScores = {};
       localStorage.setItem("testPaperData", JSON.stringify(fields));
 
-
       const updatedSavedValues = [];
-
 
       fields.forEach((field, index) => {
         const question = field.question ? field.question.trim() : "";
         const questionWithQuestionMark = question.endsWith("?")
           ? question
           : question + "?";
-
 
         const questionData = {
           type: `TYPE ${fieldTitleNumbers[index]}`,
@@ -420,7 +385,6 @@ export default function TestPaper() {
           question: questionWithQuestionMark.toUpperCase(),
           answer: field.answer ? field.answer.toUpperCase() : "",
         };
-
 
         if (
           field.questionType &&
@@ -432,9 +396,7 @@ export default function TestPaper() {
           }));
         }
 
-
         updatedSavedValues.push(questionData);
-
 
         if (field.copiedFields.length > 0) {
           field.copiedFields.forEach((copiedField, copiedIndex) => {
@@ -444,7 +406,6 @@ export default function TestPaper() {
             const questionWithQuestionMark = question.endsWith("?")
               ? question
               : question + "?";
-
 
             const copiedQuestionData = {
               type: `TYPE ${fieldTitleNumbers[index]}`,
@@ -459,7 +420,6 @@ export default function TestPaper() {
                 : "",
             };
 
-
             if (
               field.questionType &&
               field.questionType.value === "MultipleChoice"
@@ -473,12 +433,10 @@ export default function TestPaper() {
               );
             }
 
-
             updatedSavedValues.push(copiedQuestionData);
           });
         }
       });
-
 
       savedData.forEach((data) => {
         const type = data.type;
@@ -489,7 +447,6 @@ export default function TestPaper() {
         }
       });
 
-
       const totalScore = savedData.reduce(
         (total, data) => total + data.score,
         0
@@ -497,9 +454,7 @@ export default function TestPaper() {
       typeScores["Total Score"] = totalScore;
       savedData.push(typeScores);
 
-
       setSavedValues(updatedSavedValues);
-
 
       try {
         const response = await axios.post("http://localhost:3001/createtest", {
@@ -512,7 +467,6 @@ export default function TestPaper() {
           uid: uid,
           data: savedData,
         });
-
 
         if (response.status === 200) {
           setErrorMessage("Data saved successfully.");
@@ -527,7 +481,6 @@ export default function TestPaper() {
       }
     };
 
-
     return (
       <div className="d-flex flex-column justify-content-center align-items-center container-sm col-lg-8 col-11 border border-dark rounded py-2">
         {fields.map((field, index) => (
@@ -541,8 +494,7 @@ export default function TestPaper() {
               <Select
                 className="col-8"
                 options={questionTypes.filter(
-                  (option) =>
-                    !getExistingQuestionTypes(index).has(option.value)
+                  (option) => !getExistingQuestionTypes(index).has(option.value)
                 )}
                 value={field.questionType}
                 onChange={(selectedOption) =>
@@ -550,7 +502,6 @@ export default function TestPaper() {
                 }
                 placeholder="Select Question Type"
               />
-
 
               <input
                 className="col-2 py-1 rounded border border-dark"
@@ -562,7 +513,6 @@ export default function TestPaper() {
                 }
               />
             </div>
-
 
             <div className="col-12 p-0">
               <div>QUESTION NO. {fieldQuestionNumbers[index]}</div>
@@ -577,7 +527,6 @@ export default function TestPaper() {
                 handleFieldChange(index, { ...field, question: e.target.value })
               }
             />
-
 
             {field.questionType && field.questionType.value === "TrueFalse" ? (
               <div className="p-0">
@@ -634,18 +583,20 @@ export default function TestPaper() {
                     />
                   </div>
                 ))}
-                <button
-                  onClick={() => addRadioOption(index)}
-                  className="border border-dark rounded py-1 px-3"
-                >
-                  + Option
-                </button>
-                <button
-                  onClick={() => subtractRadioOption(index)}
-                  className="border border-dark rounded py-1 px-3"
-                >
-                  - Option
-                </button>
+                <div className="d-flex gap-2 mb-1">
+                  <button
+                    onClick={() => addRadioOption(index)}
+                    className="border border-dark rounded py-1 px-3"
+                  >
+                    + Option
+                  </button>
+                  <button
+                    onClick={() => subtractRadioOption(index)}
+                    className="border border-dark rounded py-1 px-3"
+                  >
+                    - Option
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-0">
@@ -663,24 +614,29 @@ export default function TestPaper() {
                 />
               </div>
             )}
-            <button
-              className="border border-dark rounded col-1"
-              onClick={() => handleReset(index)}
-            >
-              <img
-                src="/reset.svg"
-                alt="reset"
-                height={20}
-                width={20}
-                className="pb-1"
-              />
-            </button>
-            <br />
-            <button onClick={() => handleCopyFieldData(index)}>Copy</button>
-
+            <div className="d-flex gap-1">
+              <button
+                className="border border-dark rounded col-1 py-1"
+                onClick={() => handleReset(index)}
+              >
+                <img
+                  src="/reset.svg"
+                  alt="reset"
+                  height={20}
+                  width={20}
+                  className="pb-1"
+                />
+              </button>
+    
+              <button
+                className="col-2 border border-dark rounded px-3"
+                onClick={() => handleCopyFieldData(index)}
+              >
+                Copy
+              </button>
+            </div>
 
             {/* for copyfield as sub field */}
-
 
             {field.copiedFields.length > 0 && (
               <div className="p-0 row justify-content-center">
@@ -695,10 +651,9 @@ export default function TestPaper() {
                       {fieldQuestionNumbers[index] + copiedIndex + 1}
                     </div>
 
-
                     <div className="p-0 mb-1">
                       <input
-                        className="col-10 border border-dark rounded px-3 py-1"
+                        className="col-12 border border-dark rounded px-3 py-1"
                         type="text"
                         placeholder="Question"
                         value={copiedField.question}
@@ -714,7 +669,6 @@ export default function TestPaper() {
                         }
                       />
                     </div>
-
 
                     {field.questionType &&
                     field.questionType.value === "TrueFalse" ? (
@@ -748,7 +702,7 @@ export default function TestPaper() {
                       <div>
                         {copiedField.MCOptions.map((option, optionIndex) => (
                           <div key={optionIndex}>
-                            <label>
+                            <label className="col-1">
                               <input
                                 type="radio"
                                 value={option.label}
@@ -768,6 +722,7 @@ export default function TestPaper() {
                               {option.label}
                             </label>
                             <input
+                              className="py-1 px-3 border border-dark rounded mb-1"
                               type="text"
                               placeholder="Enter text"
                               value={option.text}
@@ -782,23 +737,27 @@ export default function TestPaper() {
                             />
                           </div>
                         ))}
-                        <button
-                          onClick={() => addRadioOption(index, copiedIndex)}
-                        >
-                          + Option
-                        </button>
-                        <button
-                          onClick={() =>
-                            subtractRadioOption(index, copiedIndex)
-                          }
-                        >
-                          - Option
-                        </button>
+                        <div className="d-flex gap-2 mb-1">
+                          <button
+                            className="border border-dark rounded py-1 px-3"
+                            onClick={() => addRadioOption(index, copiedIndex)}
+                          >
+                            + Option
+                          </button>
+                          <button
+                            className="border border-dark rounded py-1 px-3"
+                            onClick={() =>
+                              subtractRadioOption(index, copiedIndex)
+                            }
+                          >
+                            - Option
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div>
                         <input
-                          className="border border-dark rounded col-12 px-3 py-1"
+                          className="border border-dark rounded col-12 px-3 py-1 mb-1"
                           type="text"
                           placeholder="Answer"
                           value={copiedField.answer}
@@ -816,67 +775,80 @@ export default function TestPaper() {
                         />
                       </div>
                     )}
+                    <div className="d-flex gap-2">
+                      <button
+                        className="col-1 border border-dark rounded py-1"
+                        onClick={() => handleReset(index, copiedIndex)}
+                      >
+                        <img
+                          src="/reset.svg"
+                          alt="reset"
+                          height={20}
+                          width={20}
+                          className="pb-1"
+                        />
+                      </button>
 
+                      <button
+                        className="col-1 border border-dark rounded py-1"
+                        onClick={() =>
+                          handleRemoveCopiedField(index, copiedIndex)
+                        }
+                      >
+                        <span className="p-2">-</span>
+                      </button>
 
-                    <button
-                      className="col-1 border border-dark rounded py-1"
-                      onClick={() => handleReset(index, copiedIndex)}
-                    >
-                      <img
-                        src="/reset.svg"
-                        alt="reset"
-                        height={20}
-                        width={20}
-                        className="pb-1"
-                      />
-                    </button>
-                    <br />
-                    <button
-                      className="col-1 border border-dark rounded py-1"
-                      onClick={() =>
-                        handleRemoveCopiedField(index, copiedIndex)
-                      }
-                    >
-                      <span className="p-2">-</span>
-                    </button>
-                    <br />
-                    <button
-                      onClick={() => handleCopyFieldData(index, copiedIndex)}
-                    >
-                      Copy
-                    </button>
-                    <br />
+                      <button
+                        className="py-1 px-3 border border-dark rounded col-2"
+                        onClick={() => handleCopyFieldData(index, copiedIndex)}
+                      >
+                        Copy
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-            <div>
-              <br />
+            <div className="d-flex mb-1 mt-1 gap-1">
               <button
+                className="py-1 px-3 border border-dark rounded"
                 onClick={() =>
                   handleCopyField(index, field.copiedFields.length)
                 }
               >
-                Copy Empty Field
+                Add new Test
               </button>
-              <br />
 
-
-              <button onClick={() => handleRemoveField(index)}>
-                Remove Field
+              <button
+                className="py-1 px-3 border border-dark rounded"
+                onClick={() => handleRemoveField(index)}
+              >
+                Remove Test {fieldTitleNumbers[index]}
               </button>
             </div>
           </fieldset>
         ))}
-
-
-        <button onClick={addNewField}>Add New Field</button>
-        <br />
-        <button onClick={handleSave}>Save All</button>
+        <div className="d-flex gap-2">
+          <button
+            className="py-1 px-3 border border-dark rounded"
+            onClick={addNewField}
+          >
+            Add New Type
+          </button>
+          <button
+            className="py-1 px-3 border border-dark rounded"
+            onClick={handleSave}
+          >
+            Save All
+          </button>
+        </div>
+        <div className="d-flex gap-1 mt-1"> 
+          <button className="border border-dark rounded py-1 px-3">Save to Word</button>
+          <button className="border border-dark rounded py-1 px-3">Save to PDF</button>
+        </div>
       </div>
     );
   };
-
 
   return (
     <main className="container-fluid p-sm-4 py-3 h-100">
@@ -920,7 +892,3 @@ export default function TestPaper() {
     </main>
   );
 }
-
-
-
-
