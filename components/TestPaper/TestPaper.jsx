@@ -32,7 +32,7 @@ export default function TestPaper() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "generated.docx";
+        a.download = `${testname}_testpaper.docx`;
         a.click();
       } else {
         console.error("Failed to generate Word document.");

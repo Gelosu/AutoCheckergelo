@@ -8,18 +8,41 @@ import { useTupcid } from '@/app/provider';
 export default function AnswerSheet() {
   const { tupcids } = useTupcid();
   const [testType, setTestType] = useState('Create Test Paper First....');
-  const [numberOfQuestions, setNumberOfQuestions] = useState(0);
-  const [questionNumbers, setQuestionNumbers] = useState([]);
-  const [questionTypes, setQuestionTypes] = useState([]);
-  const [highestQuestionNumber, setHighestQuestionNumber] = useState(0);
+  const [testData, setTestData] = useState([]);
 
   const searchParams = useSearchParams();
   const uid = searchParams.get('uid');
+  const testname = searchParams.get("testname");
+
+
+
+
+   const generateAnswersheet = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/generateAnswerSheet/${uid}`
+      );
+
+      if (response.status === 200) {
+        // Trigger the download of the generated Word document
+        const blob = new Blob([response.data], { type: 'application/msword' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${testname}_answersheet.docx`;
+        a.click();
+      } else {
+        console.error("Failed to generate Word document.");
+      }
+    } catch (error) {
+      console.error("Error generating Word document:", error);
+    }
+  };
 
   const handleGenerate = () => {
-    // Add your logic here to generate the test based on the selected type and number of questions
-    console.log('Test Type:', testType);
-    console.log('Number of Questions:', numberOfQuestions);
+    // Call the function to generate the Word document
+    generateAnswersheet();
+    
   };
 
   const fetchQtypeandQn = async () => {
@@ -29,41 +52,36 @@ export default function AnswerSheet() {
       );
       if (response.status === 200) {
         const { testType, questionNumbers, questionTypes } = response.data;
-  
+
         setTestType(testType || 'Create Test Paper First');
-  
-        // Filter out unique question types
-        const uniqueQuestionTypes = [...new Set(questionTypes)];
-  
+
         // Create an object to store the highest question number for each unique type
         const highestQuestionNumbers = {};
-  
+
         // Calculate the highest number for each unique question type
-        uniqueQuestionTypes.forEach((type) => {
-          const typeQuestionNumbers = questionNumbers.filter(
-            (number, index) => questionTypes[index] === type
-          );
-          const highestNumber = Math.max(...typeQuestionNumbers);
-          if (highestNumber !== 0) {
-            highestQuestionNumbers[type] = highestNumber;
+        questionTypes.forEach((type, index) => {
+          const highestNumber = highestQuestionNumbers[type] || 0;
+          if (questionNumbers[index] > highestNumber) {
+            highestQuestionNumbers[type] = questionNumbers[index];
           }
         });
-  
-        // Construct an array of elements for each type and highest number
-        const questionTypesElements = Object.entries(highestQuestionNumbers).map(
-          ([type, highestNumber]) => ({
-            type,
-            highestNumber,
-          })
+
+        // Filter out unique question types
+        const uniqueQuestionTypes = [...new Set(questionTypes)];
+
+        // Organize data by type of test
+        const organizedTestData = uniqueQuestionTypes.map((type) => ({
+          type,
+          highestNumber: highestQuestionNumbers[type],
+        }));
+
+        // Filter out entries with no data for "TYPE OF TEST" and "NUMBER OF QUESTIONS"
+        const filteredTestData = organizedTestData.filter(
+          (item) => item.type && item.highestNumber
         );
-  
-        // Set the state variables
-        setQuestionTypes(uniqueQuestionTypes);
-        setQuestionNumbers(highestQuestionNumbers);
-  
-        // Calculate the highest number overall
-        const highestNumber = Math.max(...Object.values(highestQuestionNumbers));
-        setNumberOfQuestions(highestNumber || 0);
+
+        // Set the state variable
+        setTestData(filteredTestData);
       } else {
         console.error('Error fetching data');
       }
@@ -71,8 +89,6 @@ export default function AnswerSheet() {
       console.error('Error fetching data:', error);
     }
   };
-  
-  
 
   // Call the fetchQtypeandQn function when the component mounts
   useEffect(() => {
@@ -105,40 +121,26 @@ export default function AnswerSheet() {
         </ul>
         {/* CONTENT */}
         <section className="container-sm mt-5 col-xl-6 py-3 px-4 border border-dark rounded">
-          <div className="row p-sm-2 px-3">
-            <p className="col-sm-4 my-1 text-sm-start text-center">TYPE OF TEST</p>
-            <div className="col-sm-8">
-              {questionTypes.map((type, index) => (
-                !isNaN(questionNumbers[type]) && (
-                  <div key={index} className="d-flex">
-                    <input
-                      type="text"
-                      className="form-control py-1 px-3 rounded border border-dark text-sm-start text-center"
-                      value={type}
-                      readOnly
-                    />
-                    <span className="ms-2">
-                      Number of Questions: {questionNumbers[type]}
-                    </span>
-                  </div>
-                )
-              ))}
-            </div>
-          </div>
-          <form className="row p-sm-2 px-3">
-            <p className="col-4 my-1 text-sm-start text-center pe-0">NUMBER OF QUESTIONS</p>
-            <input
-              type="number"
-              className="py-1 px-3 col-2 rounded border border-dark text-sm-start text-center"
-              value={numberOfQuestions}
-              onChange={(e) => setNumberOfQuestions(e.target.value)}
-              readOnly
-            />
-          </form>
+          {testData.length > 0 ? (
+            testData.map((item, index) => (
+              <div key={index} className="row p-sm-2 px-3">
+                <p className="col-sm-12 my-1 text-center">
+                   TYPE OF TEST: {item.type} NUMBER OF QUESTIONS: {item.highestNumber}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p>No data available</p>
+          )}
           <div className="text-center">
-            <button className="btn btn-outline-dark px-sm-5 mt-2 mt-sm-0" onClick={handleGenerate}>
-              GENERATE
-            </button>
+            {testData.length > 0 && (
+              <button
+                className="btn btn-outline-dark px-sm-5 mt-2 mt-sm-0"
+                onClick={handleGenerate}
+              >
+                GENERATE
+              </button>
+            )}
           </div>
         </section>
         {/* END CONTENT */}

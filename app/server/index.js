@@ -1900,7 +1900,7 @@ for (const questionType in groupedQuestions) {
 });
 
 
-
+//for getting answersheet
 app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
   const { uid, tupcids } = req.params;
 
@@ -1945,6 +1945,103 @@ app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
   }
 });
     
+
+
+//for answer sheet generated
+
+app.get('/generateAnswerSheet/:uid', async (req, res) => {
+  try {
+    const { uid } = req.params; // Extract parameters from URL
+
+    // Fetch data from the database based on the parameters
+    const query = `
+      SELECT questions, test_number, test_name FROM testforstudents WHERE uid = ?;
+    `;
+    console.log("response....", uid);
+    const [qdata] = await connection.query(query, [uid]);
+
+    // Extract the questions, test_number, and test_name from the database response
+    const questionsData = qdata[0].questions;
+    const test_number = qdata[0].test_number;
+    const test_name = qdata[0].test_name;
+
+    console.log("testname...", test_name);
+    console.log("testname...", test_number);
+
+    // Create a new Word document
+    const docx = officegen({
+      type: 'docx',
+      creator: 'EOS', // Set creator information
+    });
+
+    // Define header and footer with red text color
+    const redTextOptions = {
+      color: 'FF0000', // Red color (Hex code)
+    };
+
+    // Add a footer with red text color
+    const footer = docx.getFooter();
+    footer.createP().addText('Footer Text', redTextOptions);
+
+    // Add a title to the document
+    // Set the title based on TEST NUMBER and TEST NAME
+    const title = docx.createP();
+    title.addText(`${test_number} : ${test_name}`, {
+      bold: true,
+      underline: true,
+      fontSize: 24,
+      align: 'center',
+    });
+
+    // Create an object to store questions grouped by questionType
+    const groupedQuestions = {};
+
+    // Group questions by questionType
+    questionsData.forEach((item) => {
+      const questionType = item.questionType;
+      const question = item.question;
+
+      // Check if both questionType and question are defined and not empty
+      if (questionType && question) {
+        if (!groupedQuestions[questionType]) {
+          groupedQuestions[questionType] = [];
+        }
+        groupedQuestions[questionType].push({ question });
+      }
+    });
+
+    // Iterate through the grouped questions and add them to the Word document
+    for (const questionType in groupedQuestions) {
+      const questionsOfType = groupedQuestions[questionType];
+      if (questionsOfType.length > 0) {
+        const questionTypeHeading = docx.createP();
+        questionTypeHeading.addText(`${questionType}`, {
+          bold: true,
+          fontSize: 16,
+          color: 'black', // You can adjust the color as needed
+        });
+
+        questionsOfType.forEach((questionData, index) => {
+          const questionParagraph = docx.createP();
+          questionParagraph.addText(`${index + 1}. ${questionData.question}`);
+        });
+      }
+    }
+
+    // Set the content-disposition header to specify the filename
+    const filename = `${test_number} : ${test_name}.docx`;
+
+    // Pipe the document to the response stream with the correct MIME type
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    docx.generate(res);
+
+  } catch (error) {
+    console.error('Error generating Word document:', error);
+    res.status(500).send('Error generating Word document');
+  }
+});
+
 
 
 
