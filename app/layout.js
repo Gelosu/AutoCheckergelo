@@ -8,7 +8,7 @@ import Provider from './provider';
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
+const metadata = {
   title: 'AUTO CHECKER',
   description: 'Automated test paper checker',
 }
