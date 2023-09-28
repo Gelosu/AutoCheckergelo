@@ -11,6 +11,7 @@ const uuid = require('uuid');
 const officegen = require('officegen');
 const fs = require('fs');
 const { Document, Packer } = require('docx');
+const romanize = require('romanize');
 
 
 
@@ -1338,11 +1339,8 @@ app.post('/addtestandpreset', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
   try {
-    // Insert the test
-    await connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions]);
-
-    // Insert the preset
-    await connection.query(presetQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions]);
+    await connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, JSON.stringify(questions)]);
+    await connection.query(presetQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, JSON.stringify(questions)]);
 
     console.log('Test and preset added successfully');
     return res.status(200).json({ success: true });
@@ -1795,6 +1793,8 @@ app.get('/generateWordDocument/:uid', async (req, res) => {
     console.log("testname...", test_name);
     console.log("testname...", test_number);
 
+    
+
     // Create a new Word document
     const docx = officegen({
       type: 'docx',
@@ -1848,43 +1848,68 @@ const questionTypeCounters = {};
 for (const questionType in groupedQuestions) {
   const questionsOfType = groupedQuestions[questionType];
   if (questionsOfType.length > 0) {
-    // Check if we've encountered this question type before
-    if (!questionTypeCounters[questionType]) {
-      questionTypeCounters[questionType] = testCounter;
-      testCounter++;
+    // Convert the testCounter to a Roman numeral
+    const romanNumeral = romanize(testCounter);
+
+    // Determine the display text based on question type
+    let displayText = '';
+    let instructions = '';
+    if (questionType === 'MultipleChoice') {
+      displayText = 'Multiple Choice';
+      instructions = 'Among the given options in questionnaire, choose the best option and write it in CAPITAL LETTER.';
+    } else if (questionType === 'TrueFalse') {
+      displayText = 'TRUE or FALSE';
+      instructions = 'Write TRUE if the statement is TRUE and FALSE if the statement is not true.';
+    } else if (questionType === 'Identification') {
+      displayText = 'Identification';
+      instructions = 'Write the ANSWER in CAPITAL LETTER.';
     }
-    
+
+    // Create the heading with the desired format
     const questionTypeHeading = docx.createP();
-    questionTypeHeading.addText(`TEST ${questionTypeCounters[questionType]}`, {
+    questionTypeHeading.addText(`TEST ${romanNumeral}. ${displayText}`, {
       bold: true,
       fontSize: 16,
-      color: 'black', // You can adjust the color as needed
+      color: 'black',
+    });
+
+    // Add the instructions
+    const instructionParagraph = docx.createP();
+    instructionParagraph.addText(instructions, {
+      fontSize: 12,
+      color: 'black',
     });
 
     let questionNumber = 1; // Initialize question number
 
-    questionsOfType.forEach((questionData) => {
+    questionsOfType.forEach((questionData, index) => {
+      // Check if a new column should be started
+      if (index > 0 && index % 10 === 0) {
+        questionTypeHeading.addLineBreak(); // Start a new column
+      }
+
       const questionParagraph = docx.createP();
       questionParagraph.addText(`${questionNumber}. ${questionData.question}`);
 
-      if (questionType === 'TrueFalse') {
-        // Display "TRUE" and "FALSE" for true/false questions
-        questionParagraph.addText('TRUE OR FALSE');
-      } else if (questionType === 'MultipleChoice') {
-        // Display options for multiple-choice questions
+      // Add the question text or options as needed
+     if (questionType === 'MultipleChoice') {
         if (questionData.options && questionData.options.length > 0) {
           const optionsText = questionData.options
-            .map((option, optionIndex) => `${String.fromCharCode(97 + optionIndex)}.) ${option.text}`)
-            .join('    ');
+            .map((option, optionIndex) => `       ${String.fromCharCode(97 + optionIndex)}.) ${option.text}`)
+            .join('  ');
 
-          questionParagraph.addText(optionsText);
-        }
+          questionParagraph.addText(` ${optionsText}`);
+        }     
       }
 
       questionNumber++; // Increment question number
     });
+
+    testCounter++; // Increment testCounter for the next type
   }
 }
+
+
     // Set the content-disposition header to specify the filename
     const filename = `${test_number} : ${test_name}.docx`;
 
@@ -1948,6 +1973,7 @@ app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
 
 
 //for answer sheet generated
+// ... (other imports and setup code)
 
 app.get('/generateAnswerSheet/:uid', async (req, res) => {
   try {
@@ -1958,15 +1984,16 @@ app.get('/generateAnswerSheet/:uid', async (req, res) => {
       SELECT questions, test_number, test_name FROM testforstudents WHERE uid = ?;
     `;
     console.log("response....", uid);
-    const [qdata] = await connection.query(query, [uid]);
+    const [testdata] = await connection.query(query, [uid]);
 
     // Extract the questions, test_number, and test_name from the database response
-    const questionsData = qdata[0].questions;
-    const test_number = qdata[0].test_number;
-    const test_name = qdata[0].test_name;
+    const test_number = testdata[0].test_number;
+    const test_name = testdata[0].test_name;
 
     console.log("testname...", test_name);
-    console.log("testname...", test_number);
+    console.log("testnumber...", test_number);
+
+    
 
     // Create a new Word document
     const docx = officegen({
@@ -1974,62 +2001,85 @@ app.get('/generateAnswerSheet/:uid', async (req, res) => {
       creator: 'EOS', // Set creator information
     });
 
-    // Define header and footer with red text color
-    const redTextOptions = {
-      color: 'FF0000', // Red color (Hex code)
-    };
-
-    // Add a footer with red text color
-    const footer = docx.getFooter();
-    footer.createP().addText('Footer Text', redTextOptions);
-
-    // Add a title to the document
     // Set the title based on TEST NUMBER and TEST NAME
-    const title = docx.createP();
-    title.addText(`${test_number} : ${test_name}`, {
-      bold: true,
-      underline: true,
-      fontSize: 24,
-      align: 'center',
-    });
+const title = docx.createP();
+title.addText(`${test_number}:${test_name}`, {
+  bold: true,
+  underline: true,
+  fontSize: 24,
+  align: 'center',
+});
+
+const uidText = docx.createP();
+uidText.addText(uid, {
+  bold: true,
+  fontSize: 20, // Adjust the font size as needed
+  align: 'center',
+});
+// Set the alignment of the text to center
+title.options.align = 'center';
+uidText.options.align = 'center';
 
     // Create an object to store questions grouped by questionType
     const groupedQuestions = {};
 
     // Group questions by questionType
+    const questionsData = testdata[0].questions;
     questionsData.forEach((item) => {
       const questionType = item.questionType;
-      const question = item.question;
 
-      // Check if both questionType and question are defined and not empty
-      if (questionType && question) {
+      // Check if questionType is defined and not empty
+      if (questionType) {
         if (!groupedQuestions[questionType]) {
           groupedQuestions[questionType] = [];
         }
-        groupedQuestions[questionType].push({ question });
+        // Push question numbers only (you can customize this)
+        groupedQuestions[questionType].push({ questionNumber: item.questionNumber });
       }
     });
 
-    // Iterate through the grouped questions and add them to the Word document
-    for (const questionType in groupedQuestions) {
-      const questionsOfType = groupedQuestions[questionType];
-      if (questionsOfType.length > 0) {
-        const questionTypeHeading = docx.createP();
-        questionTypeHeading.addText(`${questionType}`, {
-          bold: true,
-          fontSize: 16,
-          color: 'black', // You can adjust the color as needed
-        });
+ // Create a counter to track the number of unique question types
+let testCounter = 1;
 
-        questionsOfType.forEach((questionData, index) => {
-          const questionParagraph = docx.createP();
-          questionParagraph.addText(`${index + 1}. ${questionData.question}`);
-        });
-      }
+// Iterate through the grouped questions and add them to the Word document
+for (const questionType in groupedQuestions) {
+  const questionsOfType = groupedQuestions[questionType];
+  if (questionsOfType.length > 0) {
+    const romanNumeral = romanize(testCounter); // Convert the index to a Roman numeral
+    const questionTypeHeading = docx.createP();
+
+    // Determine the display text based on question type
+    let displayText = '';
+    if (questionType === 'MultipleChoice') {
+      displayText = 'Multiple Choice';
+    } else if (questionType === 'TrueFalse') {
+      displayText = 'TRUE or FALSE';
+    } else if (questionType === 'Identification') {
+      displayText = 'Identification';
     }
 
+    questionTypeHeading.addText(`TEST ${romanNumeral}. ${displayText}`, {
+      bold: true,
+      fontSize: 16,
+      color: 'black', // You can adjust the color as needed
+    });
+
+    let questionNumber = 1; // Initialize question number
+
+    questionsOfType.forEach((questionData) => {
+      const questionParagraph = docx.createP();
+      questionParagraph.addText(`${questionNumber}`);
+
+    
+      questionNumber++; // Increment question number
+    });
+
+    testCounter++; // Increment test counter for the next type
+  }
+}
+
     // Set the content-disposition header to specify the filename
-    const filename = `${test_number} : ${test_name}.docx`;
+    const filename = `Answer_Sheet.docx`; // Include Roman numerals in the filename
 
     // Pipe the document to the response stream with the correct MIME type
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -2037,11 +2087,10 @@ app.get('/generateAnswerSheet/:uid', async (req, res) => {
     docx.generate(res);
 
   } catch (error) {
-    console.error('Error generating Word document:', error);
-    res.status(500).send('Error generating Word document');
+    console.error('Error generating Answer Sheet:', error);
+    res.status(500).send('Error generating Answer Sheet');
   }
 });
-
 
 
 

@@ -4,46 +4,48 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import { useTupcid } from '@/app/provider';
+import Link from "next/link";
 
 export default function AnswerSheet() {
   const { tupcids } = useTupcid();
   const [testType, setTestType] = useState('Create Test Paper First....');
   const [testData, setTestData] = useState([]);
 
-  const searchParams = useSearchParams();
-  const uid = searchParams.get('uid');
-  const testname = searchParams.get("testname");
+  const searchparams = useSearchParams();
+  const testnumber = searchparams.get("testnumber");
+  const testname = searchparams.get("testname");
+  const classname = searchparams.get("classname");
+  const subjectname = searchparams.get("subjectname");
+  const classcode = searchparams.get("classcode");
+  const uid = searchparams.get("uid");
 
 
 
-
-   const generateAnswersheet = async () => {
+  const generateAnswerSheetOnClient = async (uid) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/generateAnswerSheet/${uid}`
-      );
-
-      if (response.status === 200) {
+      // Send a GET request to your endpoint
+      const response = await fetch(`http://localhost:3001/generateAnswerSheet/${uid}`);
+  
+      if (response.ok) {
         // Trigger the download of the generated Word document
-        const blob = new Blob([response.data], { type: 'application/msword' });
+        const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = `${testname}_answersheet.docx`;
         a.click();
       } else {
-        console.error("Failed to generate Word document.");
+        console.error("Failed to generate Answer Sheet.");
       }
     } catch (error) {
-      console.error("Error generating Word document:", error);
+      console.error("Error generating Answer Sheet:", error);
     }
   };
 
-  const handleGenerate = () => {
-    // Call the function to generate the Word document
-    generateAnswersheet();
-    
+  const handleGenerateAnswerSheet = () => {
+    generateAnswerSheetOnClient(uid);
   };
+  
 
   const fetchQtypeandQn = async () => {
     try {
@@ -103,12 +105,25 @@ export default function AnswerSheet() {
             <img src="/back-arrow.png" alt="Back" />
           </a>
           &nbsp;
-          <h3 className="m-0">&#123;TEST NO&#125;&#58;&#123;TEST NAME&#125;</h3>
+          <h3 className="m-0">
+            {testnumber}: {testname}
+          </h3>
         </div>
         <ul className="d-flex flex-wrap justify-content-around mt-3 list-unstyled">
-          <a href="/Test/TestPaper" className="text-decoration-none link-dark">
+          <Link 
+            href={{
+              pathname: "/Test/TestPaper",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}className="text-decoration-none link-dark">
             <li className="m-0 fs-5">TEST PAPER</li>
-          </a>
+          </Link>
           <a>
             <li className="m-0 fs-5 text-decoration-underline">ANSWER SHEET</li>
           </a>
@@ -136,7 +151,7 @@ export default function AnswerSheet() {
             {testData.length > 0 && (
               <button
                 className="btn btn-outline-dark px-sm-5 mt-2 mt-sm-0"
-                onClick={handleGenerate}
+                onClick={handleGenerateAnswerSheet}
               >
                 GENERATE
               </button>
