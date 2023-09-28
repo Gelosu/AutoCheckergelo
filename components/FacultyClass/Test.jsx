@@ -54,7 +54,7 @@ export default function FacultyClassTest() {
           class_code: classcode,
           test_name: testName,
           test_number: testNumber,
-          thumbnail: 0,
+          questions: 0,
         });
   
         if (response.status === 200 && response.data.success) {

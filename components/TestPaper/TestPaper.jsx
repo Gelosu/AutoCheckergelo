@@ -18,7 +18,36 @@ export default function TestPaper() {
   const uid = searchparams.get("uid");
   const [savedValues, setSavedValues] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loadedFromLocalStorage, setLoadedFromLocalStorage] = useState(false);
 
+  const generateWordDocument = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3001/generateWordDocument/${uid}`
+      );
+
+      if (response.ok) {
+        // Trigger the download of the generated Word document
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "generated.docx";
+        a.click();
+      } else {
+        console.error("Failed to generate Word document.");
+      }
+    } catch (error) {
+      console.error("Error generating Word document:", error);
+    }
+  };
+
+  const handleSaveToWord = () => {
+    const localStorageKey = `testPaperData_${tupcids}_${classcode}_${uid}`;
+    const savedData = JSON.parse(localStorage.getItem(localStorageKey) || "[]");
+
+    generateWordDocument(savedData);
+  };
   // Load data from localStorage when the component mounts
 
   const questionTypes = [
@@ -27,7 +56,7 @@ export default function TestPaper() {
     { value: "Identification", label: "Identification" },
   ];
 
-  const QA = ({ setSavedValues }) => {
+  const QA = () => {
     const [fields, setFields] = useState([
       {
         questionType: questionTypes[0],
@@ -46,18 +75,54 @@ export default function TestPaper() {
     ]);
 
     const localStorageKey = `testPaperData_${tupcids}_${classcode}_${uid}`;
+    const localStorageKey2 = `TData_${tupcids}_${classcode}_${uid}`;
+    const localStorageKey3 = `QData_${tupcids}_${classcode}_${uid}`;
 
     useEffect(() => {
       const savedData = localStorage.getItem(localStorageKey);
       if (savedData) {
         setFields(JSON.parse(savedData));
+        setLoadedFromLocalStorage(true);
       }
-    }, []);
+    }, [localStorageKey]);
 
-    const [fieldTitleNumbers, setFieldTitleNumbers] = useState([1]);
-    const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState([1]);
+    // Modified code to save and retrieve fieldTitleNumbers
+    const [fieldTitleNumbers, setFieldTitleNumbers] = useState(() => {
+      if (typeof localStorage !== "undefined") {
+        const savedFieldTitleNumbers = localStorage.getItem(localStorageKey2);
+        return savedFieldTitleNumbers
+          ? JSON.parse(savedFieldTitleNumbers)
+          : [1];
+      } else {
+        return [1];
+      }
+    });
+
+    // Modified code to save and retrieve fieldQuestionNumbers
+    const [fieldQuestionNumbers, setFieldQuestionNumbers] = useState(() => {
+      if (typeof localStorage !== "undefined") {
+        const savedFieldQuestionNumbers =
+          localStorage.getItem(localStorageKey3);
+        return savedFieldQuestionNumbers
+          ? JSON.parse(savedFieldQuestionNumbers)
+          : [1];
+      } else {
+        return [1];
+      }
+    });
+
+    // Modified useEffect to save fieldTitleNumbers and fieldQuestionNumbers
+    useEffect(() => {
+      if (!fieldTitleNumbers && !fieldQuestionNumbers) return;
+      localStorage.setItem(localStorageKey2, JSON.stringify(fieldTitleNumbers));
+      localStorage.setItem(
+        localStorageKey3,
+        JSON.stringify(fieldQuestionNumbers)
+      );
+    }, [fieldTitleNumbers, fieldQuestionNumbers]);
 
     const addNewField = () => {
+      console.log("field eme...", fieldTitleNumbers.length);
       if (fieldTitleNumbers.length >= 3) {
         return;
       }
@@ -262,28 +327,23 @@ export default function TestPaper() {
         updatedFields[index].copiedFields = [];
       }
 
-      if (copiedIndex === undefined) {
-        const sourceQuestion = updatedFields[index]; // Get the source question
-        const copiedData = {
-          questionType: sourceQuestion.questionType,
-          question: sourceQuestion.question,
-          answer: sourceQuestion.answer,
-          score: sourceQuestion.score,
-          MCOptions: [...sourceQuestion.MCOptions],
-          TFOptions: [...sourceQuestion.TFOptions],
-        };
+      const sourceQuestion =
+        copiedIndex === undefined
+          ? updatedFields[index]
+          : updatedFields[index].copiedFields[copiedIndex];
 
+      const copiedData = {
+        questionType: sourceQuestion.questionType,
+        question: sourceQuestion.question,
+        answer: sourceQuestion.answer,
+        score: sourceQuestion.score,
+        MCOptions: sourceQuestion.MCOptions.map((option) => ({ ...option })), // Deep copy MCOptions
+        TFOptions: sourceQuestion.TFOptions.map((option) => ({ ...option })), // Deep copy TFOptions
+      };
+
+      if (copiedIndex === undefined) {
         updatedFields[index].copiedFields.splice(index, 0, copiedData);
       } else {
-        const sourceQuestion = updatedFields[index].copiedFields[copiedIndex]; // Get the source question
-        const copiedData = {
-          questionType: sourceQuestion.questionType,
-          question: sourceQuestion.question,
-          answer: sourceQuestion.answer,
-          score: sourceQuestion.score,
-          MCOptions: [...sourceQuestion.MCOptions],
-          TFOptions: [...sourceQuestion.TFOptions],
-        };
         updatedFields[index].copiedFields.splice(
           copiedIndex + 1,
           0,
@@ -365,25 +425,23 @@ export default function TestPaper() {
     };
 
     const handleSave = async () => {
-      const savedData = [];
+      const localStorageKey = `testPaperData_${tupcids}_${classcode}_${uid}`;
+      const savedData = JSON.parse(
+        localStorage.getItem(localStorageKey) || "[]"
+      ); // Load existing data from local storage or initialize as an empty array
+
       const typeScores = {};
-      localStorage.setItem("testPaperData", JSON.stringify(fields));
+      localStorage.setItem(localStorageKey, JSON.stringify(fields));
 
       const updatedSavedValues = [];
 
       fields.forEach((field, index) => {
-        const question = field.question ? field.question.trim() : "";
-        const questionWithQuestionMark = question.endsWith("?")
-          ? question
-          : question + "?";
-
         const questionData = {
           type: `TYPE ${fieldTitleNumbers[index]}`,
-          score: Math.round(parseFloat(field.score) || 0),
           questionType: field.questionType ? field.questionType.value : null,
           questionNumber: fieldQuestionNumbers[index],
-          question: questionWithQuestionMark.toUpperCase(),
-          answer: field.answer ? field.answer.toUpperCase() : "",
+          question: field.question ? field.question.toUpperCase() : "",
+          score: Math.round(parseFloat(field.score) || 0),
         };
 
         if (
@@ -394,30 +452,27 @@ export default function TestPaper() {
             label: option.label,
             text: option.text ? option.text.toUpperCase() : "",
           }));
+
+          // Save the selected answer for MultipleChoice
+          questionData.answer = field.answer;
+        } else {
+          questionData.answer = field.answer ? field.answer.toUpperCase() : "";
         }
 
         updatedSavedValues.push(questionData);
 
         if (field.copiedFields.length > 0) {
           field.copiedFields.forEach((copiedField, copiedIndex) => {
-            const question = copiedField.question
-              ? copiedField.question.trim()
-              : "";
-            const questionWithQuestionMark = question.endsWith("?")
-              ? question
-              : question + "?";
-
             const copiedQuestionData = {
               type: `TYPE ${fieldTitleNumbers[index]}`,
-              score: Math.round(parseFloat(field.score) || 0),
               questionType: field.questionType
                 ? field.questionType.value
                 : null,
               questionNumber: fieldQuestionNumbers[index] + copiedIndex + 1,
-              question: questionWithQuestionMark.toUpperCase(),
-              answer: copiedField.answer
-                ? copiedField.answer.toUpperCase()
+              question: copiedField.question
+                ? copiedField.question.toUpperCase()
                 : "",
+              score: Math.round(parseFloat(field.score) || 0),
             };
 
             if (
@@ -431,6 +486,13 @@ export default function TestPaper() {
                   text: option.text ? option.text.toUpperCase() : "",
                 })
               );
+
+              // Save the selected answer for copied fields
+              copiedQuestionData.answer = copiedField.answer;
+            } else {
+              copiedQuestionData.answer = copiedField.answer
+                ? copiedField.answer.toUpperCase()
+                : "";
             }
 
             updatedSavedValues.push(copiedQuestionData);
@@ -447,39 +509,89 @@ export default function TestPaper() {
         }
       });
 
-      const totalScore = savedData.reduce(
+      const totalScore = updatedSavedValues.reduce(
         (total, data) => total + data.score,
         0
       );
       typeScores["Total Score"] = totalScore;
-      savedData.push(typeScores);
+      updatedSavedValues.push(typeScores);
 
       setSavedValues(updatedSavedValues);
 
       try {
-        const response = await axios.post("http://localhost:3001/createtest", {
-          TUPCID: tupcids,
-          test_name: testname,
-          test_number: testnumber,
-          class_name: classname,
-          class_code: classcode,
-          subject_name: subjectname,
-          uid: uid,
-          data: savedData,
-        });
+        console.log("DATA SENDING....", updatedSavedValues);
 
-        if (response.status === 200) {
-          setErrorMessage("Data saved successfully.");
-          localStorage.setItem(localStorageKey, JSON.stringify(fields));
-          console.log("response...", response.data);
+        if (savedData.length > 0) {
+          // Data already exists, perform a PUT request to update it in the testpaper table
+          const response1 = await axios.put(
+            `http://localhost:3001/updatetestpaper/${tupcids}/${classcode}/${uid}`,
+            {
+              data: updatedSavedValues,
+            }
+          );
+
+          if (response1.status === 200) {
+            setErrorMessage("Data updated successfully.");
+          } else {
+            setErrorMessage("Error updating data. Please try again.");
+          }
+
+          // Update data in the preset and testforstudents tables
+          const response2 = await axios.put(
+            `http://localhost:3001/updatetestpaperinpresetandtestpaper/${tupcids}/${classcode}/${testname}/${testnumber}`,
+            {
+              data: updatedSavedValues,
+            }
+          );
+
+          if (response2.status === 200) {
+            setErrorMessage("Data updated successfully.");
+          } else {
+            setErrorMessage("Error updating data. Please try again.");
+          }
         } else {
-          setErrorMessage("Error saving data. Please try again.");
+          // If no data exists, perform a POST request to create new data
+          const response = await axios.post(
+            "http://localhost:3001/createtestpaper",
+            {
+              TUPCID: tupcids,
+              test_name: testname,
+              test_number: testnumber,
+              class_name: classname,
+              class_code: classcode,
+              subject_name: subjectname,
+              uid: uid,
+              data: updatedSavedValues,
+            }
+          );
+
+          if (response.status === 200) {
+            setErrorMessage("Data saved successfully.");
+          } else {
+            setErrorMessage("Error saving data. Please try again.");
+          }
+
+          // Also update data in the preset and testpaper tables
+          const response2 = await axios.put(
+            `http://localhost:3001/updatetestpaperinpresetandtestpaper/${tupcids}/${classcode}/${testname}/${testnumber}`,
+            {
+              data: updatedSavedValues,
+            }
+          );
+
+          if (response2.status === 200) {
+            setErrorMessage("Data updated successfully.");
+          } else {
+            setErrorMessage("Error updating data. Please try again.");
+          }
         }
       } catch (error) {
-        console.error("Error saving data:", error);
-        setErrorMessage("Error saving data. Please try again.");
+        console.error("Error saving/updating data:", error);
+        setErrorMessage("Error saving/updating data. Please try again.");
       }
     };
+
+    //beta testing document
 
     return (
       <div className="d-flex flex-column justify-content-center align-items-center container-sm col-lg-8 col-11 border border-dark rounded py-2">
@@ -627,7 +739,7 @@ export default function TestPaper() {
                   className="pb-1"
                 />
               </button>
-    
+
               <button
                 className="col-2 border border-dark rounded px-3"
                 onClick={() => handleCopyFieldData(index)}
@@ -842,9 +954,13 @@ export default function TestPaper() {
             Save All
           </button>
         </div>
-        <div className="d-flex gap-1 mt-1"> 
-          <button className="border border-dark rounded py-1 px-3">Save to Word</button>
-          <button className="border border-dark rounded py-1 px-3">Save to PDF</button>
+        <div className="d-flex gap-1 mt-1">
+          <button
+            className="border border-dark rounded py-1 px-3"
+            onClick={handleSaveToWord}
+          >
+            Save to Word
+          </button>
         </div>
       </div>
     );
@@ -873,12 +989,22 @@ export default function TestPaper() {
         </div>
         <ul className="d-flex flex-wrap justify-content-around mt-3 list-unstyled">
           <li className="m-0 fs-5 text-decoration-underline">TEST PAPER</li>
-          <a
-            href="/Test/AnswerSheet"
+          <Link
+            href={{
+              pathname: "/Test/AnswerSheet",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}
             className="text-decoration-none link-dark"
           >
             <li className="m-0 fs-5">ANSWER SHEET</li>
-          </a>
+          </Link>
           <a href="/Test/AnswerKey" className="text-decoration-none link-dark">
             <li className="m-0 fs-5">ANSWER KEY</li>
           </a>
@@ -886,7 +1012,7 @@ export default function TestPaper() {
             <li className="m-0 fs-5">RECORDS</li>
           </a>
         </ul>
-        <QA setSavedValues={setSavedValues} />
+        <QA />
         {errorMessage && <div className="text-danger">{errorMessage}</div>}
       </section>
     </main>
