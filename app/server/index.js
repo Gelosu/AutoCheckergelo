@@ -1788,7 +1788,7 @@ app.get('/generateWordDocument/:uid', async (req, res) => {
     const [testdata] = await connection.query(query, [uid]);
 
     // Extract the questions, test_number, and test_name from the database response
-    const questionsData = JSON.parse(testdata[0].questions);
+    const questionsData = testdata[0].questions;
     const test_number = testdata[0].test_number;
     const test_name = testdata[0].test_name;
 
@@ -1838,12 +1838,24 @@ title.addText(`${test_number} : ${test_name}`, {
       }
     });
     
+// Create a counter to track the number of unique question types
+let testCounter = 1;
+
+// Create an object to store question types and their corresponding counters
+const questionTypeCounters = {};
+
 // Iterate through the grouped questions and add them to the Word document
 for (const questionType in groupedQuestions) {
   const questionsOfType = groupedQuestions[questionType];
   if (questionsOfType.length > 0) {
+    // Check if we've encountered this question type before
+    if (!questionTypeCounters[questionType]) {
+      questionTypeCounters[questionType] = testCounter;
+      testCounter++;
+    }
+    
     const questionTypeHeading = docx.createP();
-    questionTypeHeading.addText(`${questionType} TEST`, {
+    questionTypeHeading.addText(`TEST ${questionTypeCounters[questionType]}`, {
       bold: true,
       fontSize: 16,
       color: 'black', // You can adjust the color as needed
@@ -1853,14 +1865,12 @@ for (const questionType in groupedQuestions) {
 
     questionsOfType.forEach((questionData) => {
       const questionParagraph = docx.createP();
-      const questionText = `${questionNumber}. ${questionData.question} ?      `; // Add a question mark at the end
-      questionParagraph.addText(questionText, { spaceAfter: 10000 }); // Add spacing after the question
+      questionParagraph.addText(`${questionNumber}. ${questionData.question}`);
 
       if (questionType === 'TrueFalse') {
-        // Display "TRUE OR FALSE" for true/false questions
+        // Display "TRUE" and "FALSE" for true/false questions
         questionParagraph.addText('TRUE OR FALSE');
       } else if (questionType === 'MultipleChoice') {
-        questionParagraph.addLineBreak();
         // Display options for multiple-choice questions
         if (questionData.options && questionData.options.length > 0) {
           const optionsText = questionData.options
@@ -1912,7 +1922,7 @@ app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
       console.log("Found test data for UID:", uid);
 
       // Extract questions data from the response
-      const questionsData = JSON.parse(testdata[0].questions);
+      const questionsData = testdata[0].questions;
 
       // Extract questionNumber and questionType from questionsData
       const questionNumbers = questionsData.map((question) => question.questionNumber);
@@ -1934,7 +1944,6 @@ app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
     
 
 
