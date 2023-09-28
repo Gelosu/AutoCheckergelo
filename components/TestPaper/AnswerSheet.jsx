@@ -11,6 +11,7 @@ export default function AnswerSheet() {
   const [numberOfQuestions, setNumberOfQuestions] = useState(0);
   const [questionNumbers, setQuestionNumbers] = useState([]);
   const [questionTypes, setQuestionTypes] = useState([]);
+  const [highestQuestionNumber, setHighestQuestionNumber] = useState(0);
 
   const searchParams = useSearchParams();
   const uid = searchParams.get('uid');
@@ -27,14 +28,42 @@ export default function AnswerSheet() {
         `http://localhost:3001/getquestionstypeandnumber/${tupcids}/${uid}`
       );
       if (response.status === 200) {
-        // Extract testType, numberOfQuestions, questionNumbers, and questionTypes from the response data
-        const { testType, numberOfQuestions, questionNumbers, questionTypes } = response.data;
-
-        // Set the states based on the received data, or use defaults if data is not available
-        setTestType(testType || 'Create Test Paper First...');
-        setNumberOfQuestions(numberOfQuestions || 0);
-        setQuestionNumbers(questionNumbers || []);
-        setQuestionTypes(questionTypes || []);
+        const { testType, questionNumbers, questionTypes } = response.data;
+  
+        setTestType(testType || 'Create Test Paper First');
+  
+        // Filter out unique question types
+        const uniqueQuestionTypes = [...new Set(questionTypes)];
+  
+        // Create an object to store the highest question number for each unique type
+        const highestQuestionNumbers = {};
+  
+        // Calculate the highest number for each unique question type
+        uniqueQuestionTypes.forEach((type) => {
+          const typeQuestionNumbers = questionNumbers.filter(
+            (number, index) => questionTypes[index] === type
+          );
+          const highestNumber = Math.max(...typeQuestionNumbers);
+          if (highestNumber !== 0) {
+            highestQuestionNumbers[type] = highestNumber;
+          }
+        });
+  
+        // Construct an array of elements for each type and highest number
+        const questionTypesElements = Object.entries(highestQuestionNumbers).map(
+          ([type, highestNumber]) => ({
+            type,
+            highestNumber,
+          })
+        );
+  
+        // Set the state variables
+        setQuestionTypes(uniqueQuestionTypes);
+        setQuestionNumbers(highestQuestionNumbers);
+  
+        // Calculate the highest number overall
+        const highestNumber = Math.max(...Object.values(highestQuestionNumbers));
+        setNumberOfQuestions(highestNumber || 0);
       } else {
         console.error('Error fetching data');
       }
@@ -42,6 +71,8 @@ export default function AnswerSheet() {
       console.error('Error fetching data:', error);
     }
   };
+  
+  
 
   // Call the fetchQtypeandQn function when the component mounts
   useEffect(() => {
@@ -74,53 +105,42 @@ export default function AnswerSheet() {
         </ul>
         {/* CONTENT */}
         <section className="container-sm mt-5 col-xl-6 py-3 px-4 border border-dark rounded">
-          <form className="row p-sm-2 px-3">
+          <div className="row p-sm-2 px-3">
             <p className="col-sm-4 my-1 text-sm-start text-center">TYPE OF TEST</p>
             <div className="col-sm-8">
-              <input
-                type="text"
-                className="form-control py-1 px-3 rounded border border-dark text-sm-start text-center"
-                value={testType}
-                readOnly
-              />
+              {questionTypes.map((type, index) => (
+                !isNaN(questionNumbers[type]) && (
+                  <div key={index} className="d-flex">
+                    <input
+                      type="text"
+                      className="form-control py-1 px-3 rounded border border-dark text-sm-start text-center"
+                      value={type}
+                      readOnly
+                    />
+                    <span className="ms-2">
+                      Number of Questions: {questionNumbers[type]}
+                    </span>
+                  </div>
+                )
+              ))}
             </div>
-          </form>
+          </div>
           <form className="row p-sm-2 px-3">
-            <p className="col-4 my-1 text-sm-start text-center pe-0">NUMBER OF QUESTION</p>
+            <p className="col-4 my-1 text-sm-start text-center pe-0">NUMBER OF QUESTIONS</p>
             <input
-              min="0"
               type="number"
               className="py-1 px-3 col-2 rounded border border-dark text-sm-start text-center"
               value={numberOfQuestions}
               onChange={(e) => setNumberOfQuestions(e.target.value)}
+              readOnly
             />
           </form>
-
-          {/* Display questionNumbers and questionTypes */}
-          <div>
-            <h4>Question Numbers:</h4>
-            <ul>
-              {questionNumbers.map((number) => (
-                <li key={number}>{number}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4>Question Types:</h4>
-            <ul>
-              {questionTypes.map((type) => (
-                <li key={type}>{type}</li>
-              ))}
-            </ul>
-          </div>
-
           <div className="text-center">
             <button className="btn btn-outline-dark px-sm-5 mt-2 mt-sm-0" onClick={handleGenerate}>
               GENERATE
             </button>
           </div>
         </section>
-
         {/* END CONTENT */}
       </section>
     </main>
