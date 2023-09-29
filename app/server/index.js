@@ -1973,7 +1973,7 @@ app.get('/getquestionstypeandnumber/:tupcids/:uid', async (req, res) => {
 
 
 //for answer sheet generated
-// ... (other imports and setup code)
+
 
 app.get('/generateAnswerSheet/:uid', async (req, res) => {
   try {
@@ -2092,6 +2092,52 @@ for (const questionType in groupedQuestions) {
   }
 });
 
+//for answerkey
+app.get('/getquestionstypeandnumberandanswer/:tupcids/:uid', async (req, res) => {
+  const { uid, tupcids } = req.params;
+
+  console.log("uid:", uid);
+  console.log("tupcid:", tupcids);
+
+  try {
+    // Construct the SQL query to retrieve the questions data
+    const query = `
+      SELECT questions
+      FROM testforstudents
+      WHERE TUPCID = ? AND uid = ?;
+    `;
+
+    // Execute the query with the provided parameters
+    const [testdata] = await connection.query(query, [tupcids, uid]);
+
+    if (testdata.length >= 1) {
+      console.log("Found test data for UID:", uid);
+
+      // Extract questions data from the response
+      const questionsData = testdata[0].questions;
+
+      // Extract questionNumber, questionType, and answer from questionsData
+      const questionNumbers = questionsData.map((question) => question.questionNumber);
+      const questionTypes = questionsData.map((question) => question.questionType);
+      const answers = questionsData.map((question) => question.answer);
+
+      // Construct the response object with questionNumber, questionType, and answers
+      const responseData = {
+        questionNumbers,
+        questionTypes,
+        answers,
+      };
+
+      res.status(200).json(responseData);
+    } else {
+      console.log("Test data not found for UID:", uid);
+      res.status(404).json({ error: 'test data not found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving test data:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 //for server

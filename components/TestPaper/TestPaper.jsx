@@ -1005,12 +1005,32 @@ export default function TestPaper() {
           >
             <li className="m-0 fs-5">ANSWER SHEET</li>
           </Link>
-          <a href="/Test/AnswerKey" className="text-decoration-none link-dark">
+          <Link href={{
+              pathname: "/Test/AnswerKey",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }} className="text-decoration-none link-dark">
             <li className="m-0 fs-5">ANSWER KEY</li>
-          </a>
-          <a href="/Test/Records" className="text-decoration-none link-dark">
+          </Link>
+          <Link href={{
+              pathname: "/Test/Records",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}className="text-decoration-none link-dark">
             <li className="m-0 fs-5">RECORDS</li>
-          </a>
+          </Link>
         </ul>
         <QA />
         {errorMessage && <div className="text-danger">{errorMessage}</div>}

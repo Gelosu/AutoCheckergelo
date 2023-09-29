@@ -127,12 +127,32 @@ export default function AnswerSheet() {
           <a>
             <li className="m-0 fs-5 text-decoration-underline">ANSWER SHEET</li>
           </a>
-          <a href="/Test/AnswerKey" className="text-decoration-none link-dark">
+          <Link href={{
+              pathname: "/Test/AnswerKey",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}className="text-decoration-none link-dark">
             <li className="m-0 fs-5">ANSWER KEY</li>
-          </a>
-          <a href="/Test/Records" className="text-decoration-none link-dark">
+          </Link>
+          <Link href={{
+              pathname: "/Test/Records",
+              query: {
+                testnumber: testnumber,
+                testname: testname,
+                uid: uid,
+                classname: classname,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }} className="text-decoration-none link-dark">
             <li className="m-0 fs-5">RECORDS</li>
-          </a>
+          </Link>
         </ul>
         {/* CONTENT */}
         <section className="container-sm mt-5 col-xl-6 py-3 px-4 border border-dark rounded">
